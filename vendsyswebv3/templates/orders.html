@@ -1,0 +1,603 @@
+{% extends "_layout.html" %}
+
+{% block title %}订单管理 - 自动售货机订单交易管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">订单管理</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group mr-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshOrders()">
+                <i class="fa fa-refresh mr-1"></i>刷新
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 筛选区域 -->
+<div class="filter-section">
+    <form id="filterForm">
+        <div class="form-row">
+            <div class="form-group col-md-2">
+                <label for="orderNo">订单号</label>
+                <input type="text" class="form-control" id="orderNo" placeholder="请输入订单号">
+            </div>
+            <div class="form-group col-md-2">
+                <label for="orderStatus">订单状态</label>
+                <select class="custom-select" id="orderStatus">
+                    <option value="">全部状态</option>
+                    <option value="created">待支付</option>
+                    <option value="paid">已支付</option>
+                    <option value="delivered">已完成</option>
+                    <option value="cancelled">已取消</option>
+                    <option value="refunded">已退款</option>
+                    <option value="abnormal">异常</option>
+                </select>
+            </div>
+            <div class="form-group col-md-2">
+                <label for="paymentStatus">支付状态</label>
+                <select class="custom-select" id="paymentStatus">
+                    <option value="">全部状态</option>
+                    <option value="pending">待支付</option>
+                    <option value="paid">已支付</option>
+                    <option value="failed">支付失败</option>
+                    <option value="refunding">退款中</option>
+                    <option value="refunded">已退款</option>
+                </select>
+            </div>
+            <div class="form-group col-md-2">
+                <label for="paymentMethod">支付方式</label>
+                <select class="custom-select" id="paymentMethod">
+                    <option value="">全部方式</option>
+                    <option value="wechat">微信支付</option>
+                    <option value="alipay">支付宝</option>
+                    <option value="cash">现金</option>
+                    <option value="card">银行卡</option>
+                </select>
+            </div>
+            <div class="form-group col-md-2">
+                <label for="startTime">开始时间</label>
+                <input type="date" class="form-control" id="startTime">
+            </div>
+            <div class="form-group col-md-2">
+                <label for="endTime">结束时间</label>
+                <input type="date" class="form-control" id="endTime">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12 text-right">
+                <button type="button" class="btn btn-secondary mr-2" onclick="resetFilter()">
+                    <i class="fa fa-undo mr-1"></i>重置
+                </button>
+                <button type="button" class="btn btn-primary" onclick="searchOrders()">
+                    <i class="fa fa-search mr-1"></i>查询
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- 订单列表 -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="fa fa-list-alt mr-2"></i>订单列表
+        </h5>
+        <span class="text-muted">共 <strong id="totalCount">0</strong> 条记录</span>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover" id="ordersTable">
+                <thead>
+                    <tr>
+                        <th>订单号</th>
+                        <th>用户</th>
+                        <th>售货机</th>
+                        <th>商品数量</th>
+                        <th>实付金额</th>
+                        <th>支付方式</th>
+                        <th>订单状态</th>
+                        <th>支付状态</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="10" class="text-center text-muted py-5">
+                            <i class="fa fa-spinner fa-spin mr-2"></i>加载中...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 分页 -->
+        <div class="row">
+            <div class="col-sm-12 col-md-5">
+                <div class="dataTables_info" id="ordersTable_info" role="status">
+                    显示第 <span id="startRecord">0</span> 至 <span id="endRecord">0</span> 条，共 <span id="totalRecords">0</span> 条
+                </div>
+            </div>
+            <div class="col-sm-12 col-md-7">
+                <div class="dataTables_paginate paging_simple_numbers" id="ordersTable_paginate">
+                    <ul class="pagination" id="pagination">
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 订单详情模态框 -->
+<div class="modal fade" id="orderDetailModal" tabindex="-1" role="dialog" aria-labelledby="orderDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="orderDetailModalLabel">
+                    <i class="fa fa-info-circle mr-2"></i>订单详情
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="orderDetailContent">
+                <div class="text-center py-5">
+                    <i class="fa fa-spinner fa-spin mr-2"></i>加载中...
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fa fa-times mr-1"></i>关闭
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.filter-section .form-row {
+    margin-bottom: 15px;
+}
+
+.filter-section .form-row:last-child {
+    margin-bottom: 0;
+}
+
+#ordersTable th {
+    white-space: nowrap;
+}
+
+.modal-lg {
+    max-width: 900px;
+}
+
+.detail-section {
+    border-bottom: 1px solid #eee;
+    padding: 15px 0;
+}
+
+.detail-section:last-child {
+    border-bottom: none;
+}
+
+.detail-section h6 {
+    color: #6c757d;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.detail-item {
+    margin-bottom: 10px;
+}
+
+.detail-item .label {
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+.detail-item .value {
+    font-weight: 500;
+}
+
+.order-items-table {
+    margin-top: 10px;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 当前页码和每页条数
+let currentPage = 1;
+let currentPageSize = 10;
+
+// 页面加载时加载订单列表
+$(document).ready(function() {
+    loadOrders();
+});
+
+// 刷新订单列表
+function refreshOrders() {
+    loadOrders();
+    utils.showToast('数据已刷新', 'success');
+}
+
+// 重置筛选条件
+function resetFilter() {
+    $('#orderNo').val('');
+    $('#orderStatus').val('');
+    $('#paymentStatus').val('');
+    $('#paymentMethod').val('');
+    $('#startTime').val('');
+    $('#endTime').val('');
+    currentPage = 1;
+    loadOrders();
+}
+
+// 搜索订单
+function searchOrders() {
+    currentPage = 1;
+    loadOrders();
+}
+
+// 加载订单列表
+async function loadOrders() {
+    try {
+        const params = {
+            page: currentPage,
+            page_size: currentPageSize
+        };
+        
+        // 添加筛选条件
+        const orderNo = $('#orderNo').val().trim();
+        if (orderNo) params.order_no = orderNo;
+        
+        const orderStatus = $('#orderStatus').val();
+        if (orderStatus) params.order_status = orderStatus;
+        
+        const paymentStatus = $('#paymentStatus').val();
+        if (paymentStatus) params.payment_status = paymentStatus;
+        
+        const paymentMethod = $('#paymentMethod').val();
+        if (paymentMethod) params.payment_method = paymentMethod;
+        
+        const startTime = $('#startTime').val();
+        if (startTime) params.start_time = startTime + ' 00:00:00';
+        
+        const endTime = $('#endTime').val();
+        if (endTime) params.end_time = endTime + ' 23:59:59';
+        
+        const result = await api.get('/api/orders', params);
+        
+        renderOrdersTable(result);
+        renderPagination(result);
+        
+    } catch (error) {
+        console.error('加载订单列表失败:', error);
+        renderEmptyTable();
+    }
+}
+
+// 渲染订单表格
+function renderOrdersTable(result) {
+    const $tbody = $('#ordersTable tbody');
+    const items = result.items || [];
+    
+    if (items.length === 0) {
+        renderEmptyTable();
+        return;
+    }
+    
+    let html = '';
+    items.forEach(order => {
+        html += `
+            <tr>
+                <td><code>${order.order_no}</code></td>
+                <td>
+                    ${order.user ? (order.user.nickname || order.user.phone || '-') : '-'}
+                </td>
+                <td>
+                    ${order.machine ? (order.machine.machine_name || order.machine.machine_code || '-') : '-'}
+                </td>
+                <td>${order.item_count || 0}</td>
+                <td><strong class="text-primary">${utils.formatAmount(order.pay_amount)}</strong></td>
+                <td>${utils.getPaymentMethodText(order.payment_method)}</td>
+                <td>${utils.getOrderStatusBadge(order.order_status)}</td>
+                <td>${utils.getPaymentStatusBadge(order.payment_status)}</td>
+                <td>${utils.formatDate(order.created_at, 'MM-DD HH:mm')}</td>
+                <td>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="viewOrderDetail('${order.id}')">
+                            <i class="fa fa-eye"></i> 详情
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    
+    $tbody.html(html);
+    
+    // 更新统计信息
+    $('#totalCount').text(result.total || 0);
+    $('#totalRecords').text(result.total || 0);
+    
+    const start = (currentPage - 1) * currentPageSize + 1;
+    const end = Math.min(currentPage * currentPageSize, result.total || 0);
+    $('#startRecord').text(result.total > 0 ? start : 0);
+    $('#endRecord').text(end);
+}
+
+// 渲染空表格
+function renderEmptyTable() {
+    const $tbody = $('#ordersTable tbody');
+    $tbody.html(`
+        <tr>
+            <td colspan="10" class="text-center text-muted py-5">
+                <i class="fa fa-inbox mr-2"></i>暂无订单数据
+            </td>
+        </tr>
+    `);
+    
+    $('#totalCount').text(0);
+    $('#totalRecords').text(0);
+    $('#startRecord').text(0);
+    $('#endRecord').text(0);
+    $('#pagination').html('');
+}
+
+// 渲染分页
+function renderPagination(result) {
+    const total = result.total || 0;
+    const totalPages = result.total_pages || 1;
+    const $pagination = $('#pagination');
+    
+    if (totalPages <= 1) {
+        $pagination.html('');
+        return;
+    }
+    
+    let html = '';
+    
+    // 上一页
+    html += `<li class="paginate_button page-item ${currentPage === 1 ? 'disabled' : ''}" id="ordersTable_previous">
+        <a href="#" aria-controls="ordersTable" data-dt-idx="0" tabindex="0" class="page-link" onclick="goToPage(${currentPage - 1}, event)">上一页</a>
+    </li>`;
+    
+    // 页码
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage < maxVisiblePages - 1) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    if (startPage > 1) {
+        html += `<li class="paginate_button page-item">
+            <a href="#" aria-controls="ordersTable" tabindex="0" class="page-link" onclick="goToPage(1, event)">1</a>
+        </li>`;
+        if (startPage > 2) {
+            html += `<li class="paginate_button page-item disabled">
+                <span class="page-link">...</span>
+            </li>`;
+        }
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        html += `<li class="paginate_button page-item ${i === currentPage ? 'active' : ''}">
+            <a href="#" aria-controls="ordersTable" tabindex="0" class="page-link" onclick="goToPage(${i}, event)">${i}</a>
+        </li>`;
+    }
+    
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            html += `<li class="paginate_button page-item disabled">
+                <span class="page-link">...</span>
+            </li>`;
+        }
+        html += `<li class="paginate_button page-item">
+            <a href="#" aria-controls="ordersTable" tabindex="0" class="page-link" onclick="goToPage(${totalPages}, event)">${totalPages}</a>
+        </li>`;
+    }
+    
+    // 下一页
+    html += `<li class="paginate_button page-item ${currentPage === totalPages ? 'disabled' : ''}" id="ordersTable_next">
+        <a href="#" aria-controls="ordersTable" data-dt-idx="1" tabindex="0" class="page-link" onclick="goToPage(${currentPage + 1}, event)">下一页</a>
+    </li>`;
+    
+    $pagination.html(html);
+}
+
+// 跳转到指定页
+function goToPage(page, event) {
+    if (event) event.preventDefault();
+    currentPage = page;
+    loadOrders();
+}
+
+// 查看订单详情
+async function viewOrderDetail(orderId) {
+    $('#orderDetailModal').modal('show');
+    $('#orderDetailContent').html(`
+        <div class="text-center py-5">
+            <i class="fa fa-spinner fa-spin mr-2"></i>加载中...
+        </div>
+    `);
+    
+    try {
+        const result = await api.get(`/api/orders/${orderId}`);
+        
+        if (result.code === 200) {
+            renderOrderDetail(result.data);
+        } else {
+            $('#orderDetailContent').html(`
+                <div class="alert alert-danger">
+                    <i class="fa fa-exclamation-circle mr-2"></i>${result.message || '加载失败'}
+                </div>
+            `);
+        }
+    } catch (error) {
+        console.error('加载订单详情失败:', error);
+        $('#orderDetailContent').html(`
+            <div class="alert alert-danger">
+                <i class="fa fa-exclamation-circle mr-2"></i>加载订单详情失败
+            </div>
+        `);
+    }
+}
+
+// 渲染订单详情
+function renderOrderDetail(order) {
+    const html = `
+        <div class="detail-section">
+            <h6><i class="fa fa-info-circle mr-1"></i>基本信息</h6>
+            <div class="row">
+                <div class="col-md-4 detail-item">
+                    <div class="label">订单号</div>
+                    <div class="value"><code>${order.order_no}</code></div>
+                </div>
+                <div class="col-md-4 detail-item">
+                    <div class="label">订单状态</div>
+                    <div class="value">${utils.getOrderStatusBadge(order.order_status)}</div>
+                </div>
+                <div class="col-md-4 detail-item">
+                    <div class="label">支付方式</div>
+                    <div class="value">${utils.getPaymentMethodText(order.payment_method)}</div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4 detail-item">
+                    <div class="label">支付状态</div>
+                    <div class="value">${utils.getPaymentStatusBadge(order.payment_status)}</div>
+                </div>
+                <div class="col-md-4 detail-item">
+                    <div class="label">第三方订单号</div>
+                    <div class="value">${order.third_party_order_no || '-'}</div>
+                </div>
+                <div class="col-md-4 detail-item">
+                    <div class="label">创建时间</div>
+                    <div class="value">${utils.formatDate(order.created_at)}</div>
+                </div>
+            </div>
+            ${order.paid_at ? `
+            <div class="row">
+                <div class="col-md-4 detail-item">
+                    <div class="label">支付时间</div>
+                    <div class="value">${utils.formatDate(order.paid_at)}</div>
+                </div>
+            </div>
+            ` : ''}
+        </div>
+        
+        <div class="detail-section">
+            <h6><i class="fa fa-user mr-1"></i>用户信息</h6>
+            <div class="row">
+                <div class="col-md-4 detail-item">
+                    <div class="label">用户昵称</div>
+                    <div class="value">${order.user ? (order.user.nickname || '-') : '-'}</div>
+                </div>
+                <div class="col-md-4 detail-item">
+                    <div class="label">手机号</div>
+                    <div class="value">${order.user ? (order.user.phone || '-') : '-'}</div>
+                </div>
+                <div class="col-md-4 detail-item">
+                    <div class="label">用户编号</div>
+                    <div class="value">${order.user ? (order.user.user_code || '-') : '-'}</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="detail-section">
+            <h6><i class="fa fa-shopping-basket mr-1"></i>售货机信息</h6>
+            <div class="row">
+                <div class="col-md-4 detail-item">
+                    <div class="label">售货机名称</div>
+                    <div class="value">${order.machine ? (order.machine.machine_name || '-') : '-'}</div>
+                </div>
+                <div class="col-md-4 detail-item">
+                    <div class="label">售货机编号</div>
+                    <div class="value">${order.machine ? (order.machine.machine_code || '-') : '-'}</div>
+                </div>
+                <div class="col-md-4 detail-item">
+                    <div class="label">位置</div>
+                    <div class="value">${order.machine ? (order.machine.location || order.machine.address || '-') : '-'}</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="detail-section">
+            <h6><i class="fa fa-shopping-cart mr-1"></i>商品明细</h6>
+            <div class="table-responsive order-items-table">
+                <table class="table table-sm table-bordered">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>商品编码</th>
+                            <th>商品名称</th>
+                            <th>单价</th>
+                            <th>数量</th>
+                            <th>小计</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${(order.items || []).map(item => `
+                        <tr>
+                            <td>${item.product_code || '-'}</td>
+                            <td>${item.product_name}</td>
+                            <td>${utils.formatAmount(item.unit_price)}</td>
+                            <td>${item.quantity}</td>
+                            <td>${utils.formatAmount(item.subtotal_amount)}</td>
+                        </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="detail-section">
+            <h6><i class="fa fa-rmb mr-1"></i>金额信息</h6>
+            <div class="row">
+                <div class="col-md-4 detail-item">
+                    <div class="label">商品总金额</div>
+                    <div class="value">${utils.formatAmount(order.total_amount)}</div>
+                </div>
+                <div class="col-md-4 detail-item">
+                    <div class="label">优惠金额</div>
+                    <div class="value">${utils.formatAmount(order.discount_amount)}</div>
+                </div>
+                <div class="col-md-4 detail-item">
+                    <div class="label">实付金额</div>
+                    <div class="value"><strong class="text-primary h5">${utils.formatAmount(order.pay_amount)}</strong></div>
+                </div>
+            </div>
+        </div>
+        
+        ${order.remark || order.cancel_reason ? `
+        <div class="detail-section">
+            <h6><i class="fa fa-comment mr-1"></i>备注信息</h6>
+            ${order.remark ? `
+            <div class="detail-item">
+                <div class="label">订单备注</div>
+                <div class="value">${order.remark}</div>
+            </div>
+            ` : ''}
+            ${order.cancel_reason ? `
+            <div class="detail-item">
+                <div class="label">取消原因</div>
+                <div class="value text-danger">${order.cancel_reason}</div>
+            </div>
+            ` : ''}
+        </div>
+        ` : ''}
+    `;
+    
+    $('#orderDetailContent').html(html);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,440 @@
+{% extends "_layout.html" %}
+
+{% block title %}仪表盘 - 自动售货机订单交易管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">仪表盘</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group mr-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshDashboard()">
+                <i class="fa fa-refresh mr-1"></i>刷新数据
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 统计卡片 -->
+<div class="row">
+    <div class="col-md-3 col-sm-6 mb-4">
+        <div class="stat-card stat-primary">
+            <div class="row align-items-center">
+                <div class="col-8">
+                    <div class="stat-value" id="totalOrders">-</div>
+                    <div class="stat-label">总订单数</div>
+                </div>
+                <div class="col-4 text-right">
+                    <i class="fa fa-list-alt stat-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-sm-6 mb-4">
+        <div class="stat-card stat-success">
+            <div class="row align-items-center">
+                <div class="col-8">
+                    <div class="stat-value" id="totalAmount">-</div>
+                    <div class="stat-label">总交易额</div>
+                </div>
+                <div class="col-4 text-right">
+                    <i class="fa fa-rmb stat-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-sm-6 mb-4">
+        <div class="stat-card stat-warning">
+            <div class="row align-items-center">
+                <div class="col-8">
+                    <div class="stat-value" id="pendingAbnormal">-</div>
+                    <div class="stat-label">待处理异常</div>
+                </div>
+                <div class="col-4 text-right">
+                    <i class="fa fa-exclamation-triangle stat-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-sm-6 mb-4">
+        <div class="stat-card stat-info">
+            <div class="row align-items-center">
+                <div class="col-8">
+                    <div class="stat-value" id="todayOrders">-</div>
+                    <div class="stat-label">今日订单</div>
+                </div>
+                <div class="col-4 text-right">
+                    <i class="fa fa-calendar-check-o stat-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 订单状态分布 -->
+<div class="row">
+    <div class="col-md-8 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fa fa-pie-chart mr-2"></i>订单状态分布
+                </h5>
+                <small class="text-muted">当前所有订单状态统计</small>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="table-responsive">
+                            <table class="table table-borderless">
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <span class="status-badge status-pending mr-3">待支付</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-right">
+                                            <strong id="statPending">0</strong>
+                                            <span class="text-muted ml-1">单</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <span class="status-badge status-paid mr-3">已支付</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-right">
+                                            <strong id="statPaid">0</strong>
+                                            <span class="text-muted ml-1">单</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <span class="status-badge status-delivered mr-3">已完成</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-right">
+                                            <strong id="statDelivered">0</strong>
+                                            <span class="text-muted ml-1">单</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="table-responsive">
+                            <table class="table table-borderless">
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <span class="status-badge status-cancelled mr-3">已取消</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-right">
+                                            <strong id="statCancelled">0</strong>
+                                            <span class="text-muted ml-1">单</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <span class="status-badge status-refunded mr-3">已退款</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-right">
+                                            <strong id="statRefunded">0</strong>
+                                            <span class="text-muted ml-1">单</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <span class="status-badge status-abnormal mr-3">异常</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-right">
+                                            <strong id="statAbnormal">0</strong>
+                                            <span class="text-muted ml-1">单</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 快捷操作 -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fa fa-bolt mr-2"></i>快捷操作
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <a href="/orders" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <div class="icon-circle bg-primary text-white mr-3">
+                                <i class="fa fa-list-alt"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">订单管理</h6>
+                                <small class="text-muted">查看和管理所有订单</small>
+                            </div>
+                        </div>
+                        <i class="fa fa-chevron-right text-muted"></i>
+                    </a>
+                    
+                    <a href="/abnormal-orders" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <div class="icon-circle bg-warning text-white mr-3">
+                                <i class="fa fa-exclamation-triangle"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">异常订单</h6>
+                                <small class="text-muted">处理退款和补发</small>
+                            </div>
+                        </div>
+                        <i class="fa fa-chevron-right text-muted"></i>
+                    </a>
+                    
+                    <a href="/reconciliations" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <div class="icon-circle bg-info text-white mr-3">
+                                <i class="fa fa-balance-scale"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">对账管理</h6>
+                                <small class="text-muted">与支付平台对账</small>
+                            </div>
+                        </div>
+                        <i class="fa fa-chevron-right text-muted"></i>
+                    </a>
+                    
+                    <a href="/invoices" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <div class="icon-circle bg-success text-white mr-3">
+                                <i class="fa fa-file-text-o"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">发票管理</h6>
+                                <small class="text-muted">审核和开具发票</small>
+                            </div>
+                        </div>
+                        <i class="fa fa-chevron-right text-muted"></i>
+                    </a>
+                    
+                    <a href="/test" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <div class="icon-circle bg-secondary text-white mr-3">
+                                <i class="fa fa-flask"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">测试功能</h6>
+                                <small class="text-muted">生成测试数据</small>
+                            </div>
+                        </div>
+                        <i class="fa fa-chevron-right text-muted"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 最近订单 -->
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fa fa-clock-o mr-2"></i>最近订单
+                </h5>
+                <a href="/orders" class="btn btn-sm btn-primary">
+                    查看全部 <i class="fa fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>订单号</th>
+                                <th>用户</th>
+                                <th>售货机</th>
+                                <th>金额</th>
+                                <th>支付方式</th>
+                                <th>订单状态</th>
+                                <th>支付状态</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentOrdersTable">
+                            <tr>
+                                <td colspan="9" class="text-center text-muted py-5">
+                                    <i class="fa fa-spinner fa-spin mr-2"></i>加载中...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.icon-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stat-card .stat-value {
+    font-size: 1.75rem;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 页面加载时加载数据
+$(document).ready(function() {
+    loadDashboardData();
+});
+
+// 刷新仪表盘数据
+function refreshDashboard() {
+    loadDashboardData();
+    utils.showToast('数据已刷新', 'success');
+}
+
+// 加载仪表盘数据
+async function loadDashboardData() {
+    try {
+        // 加载订单统计
+        const orderStats = await api.get('/api/orders/statistics');
+        if (orderStats.code === 200) {
+            updateOrderStats(orderStats.data);
+        }
+        
+        // 加载异常订单统计
+        const abnormalStats = await api.get('/api/abnormal-orders/statistics');
+        if (abnormalStats.code === 200) {
+            updateAbnormalStats(abnormalStats.data);
+        }
+        
+        // 加载最近订单
+        await loadRecentOrders();
+        
+    } catch (error) {
+        console.error('加载仪表盘数据失败:', error);
+    }
+}
+
+// 更新订单统计
+function updateOrderStats(data) {
+    $('#totalOrders').text(data.total_orders || 0);
+    $('#totalAmount').text('¥' + (data.total_amount || 0).toFixed(2));
+    $('#statPending').text(data.pending_payment || 0);
+    $('#statPaid').text(data.paid || 0);
+    $('#statDelivered').text(data.delivered || 0);
+    $('#statCancelled').text(data.cancelled || 0);
+    $('#statRefunded').text(data.refunded || 0);
+    $('#statAbnormal').text(data.abnormal || 0);
+    
+    // 今日订单数（简化处理，使用已支付+已完成）
+    $('#todayOrders').text((data.paid || 0) + (data.delivered || 0));
+}
+
+// 更新异常订单统计
+function updateAbnormalStats(data) {
+    $('#pendingAbnormal').text(data.pending || 0);
+}
+
+// 加载最近订单
+async function loadRecentOrders() {
+    try {
+        const params = {
+            page: 1,
+            page_size: 10
+        };
+        
+        const result = await api.get('/api/orders', params);
+        
+        if (result.code === 200 || result.items) {
+            renderRecentOrders(result.items || []);
+        }
+    } catch (error) {
+        console.error('加载最近订单失败:', error);
+        $('#recentOrdersTable').html(`
+            <tr>
+                <td colspan="9" class="text-center text-muted py-5">
+                    <i class="fa fa-exclamation-circle mr-2"></i>暂无订单数据
+                </td>
+            </tr>
+        `);
+    }
+}
+
+// 渲染最近订单表格
+function renderRecentOrders(orders) {
+    const $tbody = $('#recentOrdersTable');
+    
+    if (!orders || orders.length === 0) {
+        $tbody.html(`
+            <tr>
+                <td colspan="9" class="text-center text-muted py-5">
+                    <i class="fa fa-inbox mr-2"></i>暂无订单数据
+                </td>
+            </tr>
+        `);
+        return;
+    }
+    
+    let html = '';
+    orders.forEach(order => {
+        html += `
+            <tr>
+                <td><code>${order.order_no}</code></td>
+                <td>
+                    ${order.user ? order.user.nickname || order.user.phone || '-' : '-'}
+                </td>
+                <td>
+                    ${order.machine ? order.machine.machine_name || order.machine.machine_code : '-'}
+                </td>
+                <td><strong>${utils.formatAmount(order.pay_amount)}</strong></td>
+                <td>${utils.getPaymentMethodText(order.payment_method)}</td>
+                <td>${utils.getOrderStatusBadge(order.order_status)}</td>
+                <td>${utils.getPaymentStatusBadge(order.payment_status)}</td>
+                <td>${utils.formatDate(order.created_at, 'MM-DD HH:mm')}</td>
+                <td>
+                    <a href="/orders/${order.id}" class="btn btn-sm btn-outline-primary">
+                        <i class="fa fa-eye"></i> 详情
+                    </a>
+                </td>
+            </tr>
+        `;
+    });
+    
+    $tbody.html(html);
+}
+</script>
+{% endblock %}

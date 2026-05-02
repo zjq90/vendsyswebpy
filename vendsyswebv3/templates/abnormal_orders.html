@@ -1,0 +1,1012 @@
+{% extends "_layout.html" %}
+
+{% block title %}异常订单处理 - 自动售货机订单交易管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">异常订单处理</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group mr-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshAbnormalOrders()">
+                <i class="fa fa-refresh mr-1"></i>刷新
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 统计卡片 -->
+<div class="row">
+    <div class="col-md-3 col-sm-6 mb-4">
+        <div class="stat-card stat-warning">
+            <div class="row align-items-center">
+                <div class="col-8">
+                    <div class="stat-value" id="totalAbnormal">0</div>
+                    <div class="stat-label">异常订单总数</div>
+                </div>
+                <div class="col-4 text-right">
+                    <i class="fa fa-exclamation-triangle stat-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-sm-6 mb-4">
+        <div class="stat-card stat-primary">
+            <div class="row align-items-center">
+                <div class="col-8">
+                    <div class="stat-value" id="pendingAbnormal">0</div>
+                    <div class="stat-label">待处理</div>
+                </div>
+                <div class="col-4 text-right">
+                    <i class="fa fa-clock-o stat-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-sm-6 mb-4">
+        <div class="stat-card stat-success">
+            <div class="row align-items-center">
+                <div class="col-8">
+                    <div class="stat-value" id="resolvedAbnormal">0</div>
+                    <div class="stat-label">已解决</div>
+                </div>
+                <div class="col-4 text-right">
+                    <i class="fa fa-check-circle stat-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-sm-6 mb-4">
+        <div class="stat-card stat-info">
+            <div class="row align-items-center">
+                <div class="col-8">
+                    <div class="stat-value" id="paidNoDelivery">0</div>
+                    <div class="stat-label">支付未出货</div>
+                </div>
+                <div class="col-4 text-right">
+                    <i class="fa fa-shopping-cart stat-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 筛选区域 -->
+<div class="filter-section">
+    <form id="filterForm">
+        <div class="form-row">
+            <div class="form-group col-md-3">
+                <label for="abnormalType">异常类型</label>
+                <select class="custom-select" id="abnormalType">
+                    <option value="">全部类型</option>
+                    <option value="paid_no_delivery">支付成功但未出货</option>
+                    <option value="delivery_failed">出货失败</option>
+                    <option value="duplicate_payment">重复扣款</option>
+                    <option value="over_payment">多付</option>
+                    <option value="system_error">系统异常</option>
+                    <option value="other">其他异常</option>
+                </select>
+            </div>
+            <div class="form-group col-md-3">
+                <label for="status">处理状态</label>
+                <select class="custom-select" id="status">
+                    <option value="">全部状态</option>
+                    <option value="pending">待处理</option>
+                    <option value="processing">处理中</option>
+                    <option value="refund_approved">退款已批准</option>
+                    <option value="refunded">已退款</option>
+                    <option value="redispatch_approved">补发已批准</option>
+                    <option value="redispatched">已补发</option>
+                    <option value="resolved">已解决</option>
+                    <option value="closed">已关闭</option>
+                </select>
+            </div>
+            <div class="form-group col-md-2">
+                <label for="startTime">开始时间</label>
+                <input type="date" class="form-control" id="startTime">
+            </div>
+            <div class="form-group col-md-2">
+                <label for="endTime">结束时间</label>
+                <input type="date" class="form-control" id="endTime">
+            </div>
+            <div class="form-group col-md-2 d-flex align-items-end">
+                <button type="button" class="btn btn-secondary mr-2" onclick="resetFilter()">
+                    <i class="fa fa-undo mr-1"></i>重置
+                </button>
+                <button type="button" class="btn btn-primary" onclick="searchAbnormalOrders()">
+                    <i class="fa fa-search mr-1"></i>查询
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- 异常订单列表 -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="fa fa-exclamation-triangle mr-2"></i>异常订单列表
+        </h5>
+        <span class="text-muted">共 <strong id="totalCount">0</strong> 条记录</span>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover" id="abnormalOrdersTable">
+                <thead>
+                    <tr>
+                        <th>异常单号</th>
+                        <th>订单号</th>
+                        <th>用户</th>
+                        <th>异常类型</th>
+                        <th>订单金额</th>
+                        <th>退款金额</th>
+                        <th>处理状态</th>
+                        <th>异常时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="9" class="text-center text-muted py-5">
+                            <i class="fa fa-spinner fa-spin mr-2"></i>加载中...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 分页 -->
+        <div class="row">
+            <div class="col-sm-12 col-md-5">
+                <div class="dataTables_info">
+                    显示第 <span id="startRecord">0</span> 至 <span id="endRecord">0</span> 条，共 <span id="totalRecords">0</span> 条
+                </div>
+            </div>
+            <div class="col-sm-12 col-md-7">
+                <div class="dataTables_paginate paging_simple_numbers">
+                    <ul class="pagination" id="pagination">
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 异常订单详情模态框 -->
+<div class="modal fade" id="abnormalDetailModal" tabindex="-1" role="dialog" aria-labelledby="abnormalDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="abnormalDetailModalLabel">
+                    <i class="fa fa-info-circle mr-2"></i>异常订单详情
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="abnormalDetailContent">
+                <div class="text-center py-5">
+                    <i class="fa fa-spinner fa-spin mr-2"></i>加载中...
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fa fa-times mr-1"></i>关闭
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 退款处理模态框 -->
+<div class="modal fade" id="refundModal" tabindex="-1" role="dialog" aria-labelledby="refundModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="refundModalLabel">
+                    <i class="fa fa-refund mr-2"></i>退款处理
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="refundForm">
+                <div class="modal-body">
+                    <input type="hidden" id="refundAbnormalId">
+                    <input type="hidden" id="refundMaxAmount">
+                    
+                    <div class="alert alert-info">
+                        <i class="fa fa-info-circle mr-2"></i>
+                        订单实付金额：<strong id="refundOrderAmount">¥0.00</strong>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="refundAmount">退款金额 <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text">¥</span>
+                            </div>
+                            <input type="number" class="form-control" id="refundAmount" 
+                                step="0.01" min="0.01" placeholder="请输入退款金额" required>
+                        </div>
+                        <small class="text-muted">退款金额不能超过订单实付金额</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="refundReason">退款原因 <span class="text-danger">*</span></label>
+                        <select class="custom-select" id="refundReason" required>
+                            <option value="">请选择退款原因</option>
+                            <option value="未出货">未出货</option>
+                            <option value="出货失败">出货失败</option>
+                            <option value="重复扣款">重复扣款</option>
+                            <option value="多付">多付退款</option>
+                            <option value="其他">其他原因</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="refundRemark">处理备注</label>
+                        <textarea class="form-control" id="refundRemark" rows="3" 
+                            placeholder="请输入处理备注（选填）"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="handledBy">处理人</label>
+                        <input type="text" class="form-control" id="handledBy" 
+                            placeholder="请输入处理人姓名" value="管理员">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fa fa-times mr-1"></i>取消
+                    </button>
+                    <button type="button" class="btn btn-warning" onclick="submitRefund()">
+                        <i class="fa fa-check mr-1"></i>批准退款
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 补发处理模态框 -->
+<div class="modal fade" id="redispatchModal" tabindex="-1" role="dialog" aria-labelledby="redispatchModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="redispatchModalLabel">
+                    <i class="fa fa-truck mr-2"></i>补发处理
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="redispatchForm">
+                <div class="modal-body">
+                    <input type="hidden" id="redispatchAbnormalId">
+                    
+                    <div class="alert alert-info">
+                        <i class="fa fa-info-circle mr-2"></i>
+                        将为用户补发商品
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="redispatchRemark">补发备注</label>
+                        <textarea class="form-control" id="redispatchRemark" rows="3" 
+                            placeholder="请输入补发备注（选填）"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="redispatchHandledBy">处理人</label>
+                        <input type="text" class="form-control" id="redispatchHandledBy" 
+                            placeholder="请输入处理人姓名" value="管理员">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fa fa-times mr-1"></i>取消
+                    </button>
+                    <button type="button" class="btn btn-warning" onclick="submitRedispatch()">
+                        <i class="fa fa-check mr-1"></i>批准补发
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 关闭异常订单模态框 -->
+<div class="modal fade" id="closeModal" tabindex="-1" role="dialog" aria-labelledby="closeModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="closeModalLabel">
+                    <i class="fa fa-times-circle mr-2"></i>关闭异常订单
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="closeForm">
+                <div class="modal-body">
+                    <input type="hidden" id="closeAbnormalId">
+                    
+                    <div class="form-group">
+                        <label for="closeRemark">关闭备注 <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="closeRemark" rows="3" 
+                            placeholder="请输入关闭原因，说明问题已解决" required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="closeHandledBy">处理人</label>
+                        <input type="text" class="form-control" id="closeHandledBy" 
+                            placeholder="请输入处理人姓名" value="管理员">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fa fa-times mr-1"></i>取消
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="submitClose()">
+                        <i class="fa fa-check mr-1"></i>确认关闭
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 确认退款完成模态框 -->
+<div class="modal fade" id="confirmRefundModal" tabindex="-1" role="dialog" aria-labelledby="confirmRefundModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmRefundModalLabel">
+                    <i class="fa fa-check-circle mr-2"></i>确认退款完成
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="confirmRefundAbnormalId">
+                <div class="alert alert-warning">
+                    <i class="fa fa-exclamation-triangle mr-2"></i>
+                    此操作将标记退款已完成，订单状态将更新为已退款。
+                </div>
+                <p>确认退款已成功处理？</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fa fa-times mr-1"></i>取消
+                </button>
+                <button type="button" class="btn btn-success" onclick="submitConfirmRefund()">
+                    <i class="fa fa-check mr-1"></i>确认完成
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 确认补发完成模态框 -->
+<div class="modal fade" id="confirmRedispatchModal" tabindex="-1" role="dialog" aria-labelledby="confirmRedispatchModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmRedispatchModalLabel">
+                    <i class="fa fa-check-circle mr-2"></i>确认补发完成
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="confirmRedispatchAbnormalId">
+                <div class="alert alert-warning">
+                    <i class="fa fa-exclamation-triangle mr-2"></i>
+                    此操作将标记补发已完成，订单状态将更新为已完成。
+                </div>
+                <p>确认补发已成功完成？</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fa fa-times mr-1"></i>取消
+                </button>
+                <button type="button" class="btn btn-success" onclick="submitConfirmRedispatch()">
+                    <i class="fa fa-check mr-1"></i>确认完成
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.stat-card .stat-value {
+    font-size: 1.75rem;
+}
+
+.filter-section .form-row {
+    margin-bottom: 15px;
+}
+
+.filter-section .form-row:last-child {
+    margin-bottom: 0;
+}
+
+.btn-group-xs .btn {
+    padding: .15rem .4rem;
+    font-size: .75rem;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentPage = 1;
+let currentPageSize = 10;
+
+$(document).ready(function() {
+    loadStatistics();
+    loadAbnormalOrders();
+});
+
+async function loadStatistics() {
+    try {
+        const result = await api.get('/api/abnormal-orders/statistics');
+        if (result.code === 200) {
+            const data = result.data;
+            $('#totalAbnormal').text(data.total_abnormal || 0);
+            $('#pendingAbnormal').text(data.pending || 0);
+            $('#resolvedAbnormal').text(data.resolved || 0);
+            $('#paidNoDelivery').text(data.paid_no_delivery || 0);
+        }
+    } catch (error) {
+        console.error('加载统计信息失败:', error);
+    }
+}
+
+function refreshAbnormalOrders() {
+    loadStatistics();
+    loadAbnormalOrders();
+    utils.showToast('数据已刷新', 'success');
+}
+
+function resetFilter() {
+    $('#abnormalType').val('');
+    $('#status').val('');
+    $('#startTime').val('');
+    $('#endTime').val('');
+    currentPage = 1;
+    loadAbnormalOrders();
+}
+
+function searchAbnormalOrders() {
+    currentPage = 1;
+    loadAbnormalOrders();
+}
+
+async function loadAbnormalOrders() {
+    try {
+        const params = {
+            page: currentPage,
+            page_size: currentPageSize
+        };
+        
+        const abnormalType = $('#abnormalType').val();
+        if (abnormalType) params.abnormal_type = abnormalType;
+        
+        const status = $('#status').val();
+        if (status) params.status = status;
+        
+        const startTime = $('#startTime').val();
+        if (startTime) params.start_time = startTime + ' 00:00:00';
+        
+        const endTime = $('#endTime').val();
+        if (endTime) params.end_time = endTime + ' 23:59:59';
+        
+        const result = await api.get('/api/abnormal-orders', params);
+        
+        renderAbnormalOrdersTable(result);
+        renderPagination(result);
+        
+    } catch (error) {
+        console.error('加载异常订单列表失败:', error);
+        renderEmptyTable();
+    }
+}
+
+function renderAbnormalOrdersTable(result) {
+    const $tbody = $('#abnormalOrdersTable tbody');
+    const items = result.items || [];
+    
+    if (items.length === 0) {
+        renderEmptyTable();
+        return;
+    }
+    
+    let html = '';
+    items.forEach(ab => {
+        html += `
+            <tr>
+                <td><code>${ab.id.substring(0, 8)}...</code></td>
+                <td><code>${ab.order ? ab.order.order_no : '-'}</code></td>
+                <td>
+                    ${ab.order && ab.order.user ? (ab.order.user.nickname || ab.order.user.phone || '-') : '-'}
+                </td>
+                <td>${utils.getAbnormalTypeText(ab.abnormal_type)}</td>
+                <td><strong>${utils.formatAmount(ab.order ? ab.order.pay_amount : 0)}</strong></td>
+                <td>${ab.refund_amount ? utils.formatAmount(ab.refund_amount) : '-'}</td>
+                <td>${utils.getAbnormalStatusBadge(ab.status)}</td>
+                <td>${utils.formatDate(ab.abnormal_time || ab.created_at, 'MM-DD HH:mm')}</td>
+                <td>
+                    <div class="btn-group btn-group-xs" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-primary" 
+                            onclick="viewAbnormalDetail('${ab.id}')">
+                            <i class="fa fa-eye"></i> 详情
+                        </button>
+                        ${renderActionButtons(ab)}
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    
+    $tbody.html(html);
+    
+    $('#totalCount').text(result.total || 0);
+    $('#totalRecords').text(result.total || 0);
+    
+    const start = (currentPage - 1) * currentPageSize + 1;
+    const end = Math.min(currentPage * currentPageSize, result.total || 0);
+    $('#startRecord').text(result.total > 0 ? start : 0);
+    $('#endRecord').text(end);
+}
+
+function renderActionButtons(ab) {
+    let buttons = '';
+    
+    if (ab.status === 'pending' || ab.status === 'processing') {
+        buttons += `
+            <button type="button" class="btn btn-sm btn-outline-warning" 
+                onclick="openRefundModal('${ab.id}', ${ab.order ? ab.order.pay_amount : 0})">
+                <i class="fa fa-refund"></i> 退款
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-info" 
+                onclick="openRedispatchModal('${ab.id}')">
+                <i class="fa fa-truck"></i> 补发
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" 
+                onclick="openCloseModal('${ab.id}')">
+                <i class="fa fa-times"></i> 关闭
+            </button>
+        `;
+    }
+    
+    if (ab.status === 'refund_approved') {
+        buttons += `
+            <button type="button" class="btn btn-sm btn-outline-success" 
+                onclick="openConfirmRefundModal('${ab.id}')">
+                <i class="fa fa-check"></i> 确认退款
+            </button>
+        `;
+    }
+    
+    if (ab.status === 'redispatch_approved') {
+        buttons += `
+            <button type="button" class="btn btn-sm btn-outline-success" 
+                onclick="openConfirmRedispatchModal('${ab.id}')">
+                <i class="fa fa-check"></i> 确认补发
+            </button>
+        `;
+    }
+    
+    return buttons;
+}
+
+function renderEmptyTable() {
+    const $tbody = $('#abnormalOrdersTable tbody');
+    $tbody.html(`
+        <tr>
+            <td colspan="9" class="text-center text-muted py-5">
+                <i class="fa fa-inbox mr-2"></i>暂无异常订单数据
+            </td>
+        </tr>
+    `);
+    
+    $('#totalCount').text(0);
+    $('#totalRecords').text(0);
+    $('#startRecord').text(0);
+    $('#endRecord').text(0);
+    $('#pagination').html('');
+}
+
+function renderPagination(result) {
+    const total = result.total || 0;
+    const totalPages = result.total_pages || 1;
+    const $pagination = $('#pagination');
+    
+    if (totalPages <= 1) {
+        $pagination.html('');
+        return;
+    }
+    
+    let html = '';
+    
+    html += `<li class="paginate_button page-item ${currentPage === 1 ? 'disabled' : ''}">
+        <a href="#" class="page-link" onclick="goToPage(${currentPage - 1}, event)">上一页</a>
+    </li>`;
+    
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage < maxVisiblePages - 1) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    if (startPage > 1) {
+        html += `<li class="paginate_button page-item">
+            <a href="#" class="page-link" onclick="goToPage(1, event)">1</a>
+        </li>`;
+        if (startPage > 2) {
+            html += `<li class="paginate_button page-item disabled">
+                <span class="page-link">...</span>
+            </li>`;
+        }
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        html += `<li class="paginate_button page-item ${i === currentPage ? 'active' : ''}">
+            <a href="#" class="page-link" onclick="goToPage(${i}, event)">${i}</a>
+        </li>`;
+    }
+    
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            html += `<li class="paginate_button page-item disabled">
+                <span class="page-link">...</span>
+            </li>`;
+        }
+        html += `<li class="paginate_button page-item">
+            <a href="#" class="page-link" onclick="goToPage(${totalPages}, event)">${totalPages}</a>
+        </li>`;
+    }
+    
+    html += `<li class="paginate_button page-item ${currentPage === totalPages ? 'disabled' : ''}">
+        <a href="#" class="page-link" onclick="goToPage(${currentPage + 1}, event)">下一页</a>
+    </li>`;
+    
+    $pagination.html(html);
+}
+
+function goToPage(page, event) {
+    if (event) event.preventDefault();
+    currentPage = page;
+    loadAbnormalOrders();
+}
+
+async function viewAbnormalDetail(abnormalId) {
+    $('#abnormalDetailModal').modal('show');
+    $('#abnormalDetailContent').html(`
+        <div class="text-center py-5">
+            <i class="fa fa-spinner fa-spin mr-2"></i>加载中...
+        </div>
+    `);
+    
+    try {
+        const result = await api.get(`/api/abnormal-orders/${abnormalId}`);
+        
+        if (result.code === 200) {
+            renderAbnormalDetail(result.data);
+        } else {
+            $('#abnormalDetailContent').html(`
+                <div class="alert alert-danger">
+                    <i class="fa fa-exclamation-circle mr-2"></i>${result.message || '加载失败'}
+                </div>
+            `);
+        }
+    } catch (error) {
+        console.error('加载异常订单详情失败:', error);
+        $('#abnormalDetailContent').html(`
+            <div class="alert alert-danger">
+                <i class="fa fa-exclamation-circle mr-2"></i>加载异常订单详情失败
+            </div>
+        `);
+    }
+}
+
+function renderAbnormalDetail(ab) {
+    const html = `
+        <div class="detail-section">
+            <h6><i class="fa fa-info-circle mr-1"></i>异常信息</h6>
+            <div class="row">
+                <div class="col-md-4 detail-item">
+                    <div class="label">异常单号</div>
+                    <div class="value"><code>${ab.id}</code></div>
+                </div>
+                <div class="col-md-4 detail-item">
+                    <div class="label">异常类型</div>
+                    <div class="value">${utils.getAbnormalTypeText(ab.abnormal_type)}</div>
+                </div>
+                <div class="col-md-4 detail-item">
+                    <div class="label">处理状态</div>
+                    <div class="value">${utils.getAbnormalStatusBadge(ab.status)}</div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4 detail-item">
+                    <div class="label">异常时间</div>
+                    <div class="value">${utils.formatDate(ab.abnormal_time || ab.created_at)}</div>
+                </div>
+                ${ab.refund_amount ? `
+                <div class="col-md-4 detail-item">
+                    <div class="label">退款金额</div>
+                    <div class="value">${utils.formatAmount(ab.refund_amount)}</div>
+                </div>
+                ` : ''}
+            </div>
+            ${ab.abnormal_description ? `
+            <div class="detail-item">
+                <div class="label">异常描述</div>
+                <div class="value">${ab.abnormal_description}</div>
+            </div>
+            ` : ''}
+        </div>
+        
+        ${ab.order ? `
+        <div class="detail-section">
+            <h6><i class="fa fa-list-alt mr-1"></i>关联订单信息</h6>
+            <div class="row">
+                <div class="col-md-4 detail-item">
+                    <div class="label">订单号</div>
+                    <div class="value"><code>${ab.order.order_no}</code></div>
+                </div>
+                <div class="col-md-4 detail-item">
+                    <div class="label">订单状态</div>
+                    <div class="value">${utils.getOrderStatusBadge(ab.order.order_status)}</div>
+                </div>
+                <div class="col-md-4 detail-item">
+                    <div class="label">实付金额</div>
+                    <div class="value"><strong class="text-primary">${utils.formatAmount(ab.order.pay_amount)}</strong></div>
+                </div>
+            </div>
+            ${ab.order.user ? `
+            <div class="row">
+                <div class="col-md-4 detail-item">
+                    <div class="label">用户</div>
+                    <div class="value">${ab.order.user.nickname || ab.order.user.phone || '-'}</div>
+                </div>
+                <div class="col-md-4 detail-item">
+                    <div class="label">手机号</div>
+                    <div class="value">${ab.order.user.phone || '-'}</div>
+                </div>
+            </div>
+            ` : ''}
+        </div>
+        ` : ''}
+        
+        <div class="detail-section">
+            <h6><i class="fa fa-history mr-1"></i>处理记录</h6>
+            ${ab.refund_approved_at ? `
+            <div class="row">
+                <div class="col-md-6 detail-item">
+                    <div class="label">退款批准时间</div>
+                    <div class="value">${utils.formatDate(ab.refund_approved_at)}</div>
+                </div>
+                ${ab.refund_completed_at ? `
+                <div class="col-md-6 detail-item">
+                    <div class="label">退款完成时间</div>
+                    <div class="value">${utils.formatDate(ab.refund_completed_at)}</div>
+                </div>
+                ` : ''}
+            </div>
+            ` : ''}
+            ${ab.redispatch_approved_at ? `
+            <div class="row">
+                <div class="col-md-6 detail-item">
+                    <div class="label">补发批准时间</div>
+                    <div class="value">${utils.formatDate(ab.redispatch_approved_at)}</div>
+                </div>
+                ${ab.redispatch_completed_at ? `
+                <div class="col-md-6 detail-item">
+                    <div class="label">补发完成时间</div>
+                    <div class="value">${utils.formatDate(ab.redispatch_completed_at)}</div>
+                </div>
+                ` : ''}
+            </div>
+            ` : ''}
+            ${ab.handled_by ? `
+            <div class="row">
+                <div class="col-md-6 detail-item">
+                    <div class="label">处理人</div>
+                    <div class="value">${ab.handled_by}</div>
+                </div>
+            </div>
+            ` : ''}
+            ${ab.handler_remark ? `
+            <div class="detail-item">
+                <div class="label">处理备注</div>
+                <div class="value">${ab.handler_remark}</div>
+            </div>
+            ` : ''}
+        </div>
+    `;
+    
+    $('#abnormalDetailContent').html(html);
+}
+
+function openRefundModal(abnormalId, maxAmount) {
+    $('#refundAbnormalId').val(abnormalId);
+    $('#refundMaxAmount').val(maxAmount);
+    $('#refundOrderAmount').text(utils.formatAmount(maxAmount));
+    $('#refundAmount').val(maxAmount);
+    $('#refundReason').val('');
+    $('#refundRemark').val('');
+    $('#refundModal').modal('show');
+}
+
+async function submitRefund() {
+    const abnormalId = $('#refundAbnormalId').val();
+    const refundAmount = parseFloat($('#refundAmount').val());
+    const maxAmount = parseFloat($('#refundMaxAmount').val());
+    const refundReason = $('#refundReason').val();
+    const refundRemark = $('#refundRemark').val();
+    const handledBy = $('#handledBy').val();
+    
+    if (!refundAmount || refundAmount <= 0) {
+        utils.showToast('请输入有效的退款金额', 'error');
+        return;
+    }
+    
+    if (refundAmount > maxAmount) {
+        utils.showToast('退款金额不能超过订单实付金额', 'error');
+        return;
+    }
+    
+    if (!refundReason) {
+        utils.showToast('请选择退款原因', 'error');
+        return;
+    }
+    
+    try {
+        const result = await api.post(`/api/abnormal-orders/${abnormalId}/refund`, {
+            refund_amount: refundAmount,
+            refund_reason: refundReason,
+            refund_remark: refundRemark,
+            handled_by: handledBy
+        });
+        
+        if (result.code === 200) {
+            utils.showToast('退款已批准，等待实际退款处理', 'success');
+            $('#refundModal').modal('hide');
+            loadStatistics();
+            loadAbnormalOrders();
+        } else {
+            utils.showToast(result.message || '操作失败', 'error');
+        }
+    } catch (error) {
+        console.error('退款失败:', error);
+        utils.showToast('退款操作失败', 'error');
+    }
+}
+
+function openRedispatchModal(abnormalId) {
+    $('#redispatchAbnormalId').val(abnormalId);
+    $('#redispatchRemark').val('');
+    $('#redispatchModal').modal('show');
+}
+
+async function submitRedispatch() {
+    const abnormalId = $('#redispatchAbnormalId').val();
+    const redispatchRemark = $('#redispatchRemark').val();
+    const handledBy = $('#redispatchHandledBy').val();
+    
+    try {
+        const result = await api.post(`/api/abnormal-orders/${abnormalId}/redispatch`, {
+            redispatch_remark: redispatchRemark,
+            handled_by: handledBy
+        });
+        
+        if (result.code === 200) {
+            utils.showToast('补发已批准，等待出货处理', 'success');
+            $('#redispatchModal').modal('hide');
+            loadStatistics();
+            loadAbnormalOrders();
+        } else {
+            utils.showToast(result.message || '操作失败', 'error');
+        }
+    } catch (error) {
+        console.error('补发失败:', error);
+        utils.showToast('补发操作失败', 'error');
+    }
+}
+
+function openCloseModal(abnormalId) {
+    $('#closeAbnormalId').val(abnormalId);
+    $('#closeRemark').val('');
+    $('#closeModal').modal('show');
+}
+
+async function submitClose() {
+    const abnormalId = $('#closeAbnormalId').val();
+    const handlerRemark = $('#closeRemark').val();
+    const handledBy = $('#closeHandledBy').val();
+    
+    if (!handlerRemark.trim()) {
+        utils.showToast('请输入关闭原因', 'error');
+        return;
+    }
+    
+    try {
+        const result = await api.put(`/api/abnormal-orders/${abnormalId}/close?handler_remark=${encodeURIComponent(handlerRemark)}&handled_by=${encodeURIComponent(handledBy)}`);
+        
+        if (result.code === 200) {
+            utils.showToast('异常订单已关闭', 'success');
+            $('#closeModal').modal('hide');
+            loadStatistics();
+            loadAbnormalOrders();
+        } else {
+            utils.showToast(result.message || '操作失败', 'error');
+        }
+    } catch (error) {
+        console.error('关闭失败:', error);
+        utils.showToast('关闭操作失败', 'error');
+    }
+}
+
+function openConfirmRefundModal(abnormalId) {
+    $('#confirmRefundAbnormalId').val(abnormalId);
+    $('#confirmRefundModal').modal('show');
+}
+
+async function submitConfirmRefund() {
+    const abnormalId = $('#confirmRefundAbnormalId').val();
+    
+    try {
+        const result = await api.post(`/api/abnormal-orders/${abnormalId}/confirm-refund`);
+        
+        if (result.code === 200) {
+            utils.showToast('退款已完成', 'success');
+            $('#confirmRefundModal').modal('hide');
+            loadStatistics();
+            loadAbnormalOrders();
+        } else {
+            utils.showToast(result.message || '操作失败', 'error');
+        }
+    } catch (error) {
+        console.error('确认退款失败:', error);
+        utils.showToast('确认退款操作失败', 'error');
+    }
+}
+
+function openConfirmRedispatchModal(abnormalId) {
+    $('#confirmRedispatchAbnormalId').val(abnormalId);
+    $('#confirmRedispatchModal').modal('show');
+}
+
+async function submitConfirmRedispatch() {
+    const abnormalId = $('#confirmRedispatchAbnormalId').val();
+    
+    try {
+        const result = await api.post(`/api/abnormal-orders/${abnormalId}/confirm-redispatch`);
+        
+        if (result.code === 200) {
+            utils.showToast('补发已完成', 'success');
+            $('#confirmRedispatchModal').modal('hide');
+            loadStatistics();
+            loadAbnormalOrders();
+        } else {
+            utils.showToast(result.message || '操作失败', 'error');
+        }
+    } catch (error) {
+        console.error('确认补发失败:', error);
+        utils.showToast('确认补发操作失败', 'error');
+    }
+}
+</script>
+{% endblock %}

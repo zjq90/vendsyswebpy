@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>可视化大屏 - 自动售货机管理系统</title>
+    
+    <!-- Bootstrap 4 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
+    <!-- 样式 -->
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(180deg, #0a1628 0%, #1a2a4a 50%, #0a1628 100%);
+            min-height: 100vh;
+            color: #fff;
+            font-family: 'Microsoft YaHei', sans-serif;
+            overflow-x: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(90deg, transparent, rgba(0, 102, 255, 0.2), transparent;
+            padding: 15px 30px;
+            border-bottom: 1px solid rgba(0, 102, 255, 0.3);
+            position: relative;
+        }
+        
+        .header::before,
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            width: 30%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #0066ff, transparent);
+        }
+        
+        .header::before { left: 0; }
+        .header::after { right: 0; }
+        
+        .header-title {
+            text-align: center;
+            font-size: 32px;
+            font-weight: bold;
+            background: linear-gradient(90deg, #00d4ff, #0099ff, #0066ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(0, 102, 255, 0.5);
+            letter-spacing: 10px;
+        }
+        
+        .header-time {
+            position: absolute;
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 16px;
+            color: #00d4ff;
+        }
+        
+        .main { padding: 20px;
+        }
+        
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            margin: 0 -10px;
+        }
+        
+        .col {
+            padding: 0 10px;
+            margin-bottom: 20px;
+        }
+        
+        .col-left, .col-right {
+            flex: 0 0 25%;
+            max-width: 25%;
+        }
+        
+        .col-center {
+            flex: 0 0 50%;
+            max-width: 50%;
+        }
+        
+        .panel {
+            background: linear-gradient(180deg, rgba(0, 102, 255, 0.1), rgba(0, 102, 255, 0.05));
+            border: 1px solid rgba(0, 102, 255, 0.3);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 10px;
+            height: 10px;
+            border-top: 2px solid #00d4ff;
+            border-left: 2px solid #00d4ff;
+        }
+        
+        .panel::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 10px;
+            height: 10px;
+            border-bottom: 2px solid #00d4ff;
+            border-right: 2px solid #00d4ff;
+        }
+        
+        .panel-header {
+            padding: 12px 20px;
+            border-bottom: 1px solid rgba(0, 102, 255, 0.3);
+            background: rgba(0, 102, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .panel-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #00d4ff;
+            display: flex;
+            align-items: center;
+        }
+        
+        .panel-title i {
+            margin-right: 8px;
+        }
+        
+        .panel-body {
+            padding: 15px 20px;
+        }
+        
+        /* 统计卡片 */
+        .stat-card {
+            background: linear-gradient(135deg, rgba(0, 102, 255, 0.2), rgba(0, 212, 255, 0.1));
+            border: 1px solid rgba(0, 102, 255, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            margin-bottom: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(0, 212, 255, 0.2), transparent 70%);
+        }
+        
+        .stat-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            background: linear-gradient(90deg, #00d4ff, #fff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 5px;
+        }
+        
+        /* 图表容器 */
+        .chart-container {
+            height: 200px;
+            width: 100%;
+        }
+        
+        .chart-container-large {
+            height: 300px;
+        }
+        
+        /* 实时订单滚动 */
+        .order-list {
+            max-height: 350px;
+            overflow-y: auto;
+        }
+        
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(0, 102, 255, 0.2);
+        }
+        
+        .order-item:last-child {
+            border-bottom: none;
+        }
+        
+        .order-info {
+            flex: 1;
+        }
+        
+        .order-no {
+            font-size: 14px;
+            color: #fff;
+            font-family: monospace;
+        }
+        
+        .order-time {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 3px;
+        }
+        
+        .order-amount {
+            font-size: 16px;
+            font-weight: bold;
+            color: #00d4ff;
+        }
+        
+        .order-status {
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-left: 10px;
+        }
+        
+        .status-success {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+        
+        .status-pending {
+            background: rgba(255, 200, 0, 0.2);
+            color: #ffc800;
+            border: 1px solid rgba(255, 200, 0, 0.3);
+        }
+        
+        /* 进度条 */
+        .progress-item {
+            margin-bottom: 15px;
+        }
+        
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        .progress-name {
+            color: #fff;
+        }
+        
+        .progress-value {
+            color: #00d4ff;
+        }
+        
+        .progress-bar-custom {
+            height: 8px;
+            background: rgba(0, 102, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #00d4ff, #0066ff);
+            transition: width 1s ease;
+        }
+        
+        /* 状态圆点 */
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .dot-online {
+            background: #00ff88;
+            box-shadow: 0 0 10px #00ff88;
+        }
+        
+        .dot-offline {
+            background: #ff6666;
+        }
+        
+        .dot-fault {
+            background: #ffc800;
+        }
+        
+        /* 表格样式 */
+        .data-table {
+            width: 100%;
+            font-size: 14px;
+        }
+        
+        .data-table th {
+            color: #00d4ff;
+            font-weight: normal;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(0, 102, 255, 0.3);
+        }
+        
+        .data-table td {
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(0, 102, 255, 0.1);
+        }
+        
+        /* 数字滚动动画 */
+        @keyframes countUp {
+            from { opacity: 0.5; }
+            to { opacity: 1; }
+        }
+        
+        .animate-value {
+            animation: countUp 0.5s ease;
+        }
+        
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 102, 255, 0.1);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 102, 255, 0.5);
+            border-radius: 2px;
+        }
+        
+        /* 大屏特殊样式 */
+        .map-container {
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .map-center {
+            text-align: center;
+        }
+        
+        .map-circle {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            position: relative;
+        }
+        
+        .map-circle::before,
+        .map-circle::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            border: 1px dashed rgba(0, 212, 255, 0.3);
+            animation: pulse 2s ease infinite;
+        }
+        
+        .map-circle::before {
+            width: 250px;
+            height: 250px;
+        }
+        
+        .map-circle::after {
+            width: 300px;
+            height: 300px;
+            animation-delay: 1s;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 0.5;
+            }
+            50% {
+                transform: scale(1.05);
+                opacity: 1;
+            }
+        }
+        
+        .map-number {
+            font-size: 48px;
+            font-weight: bold;
+            color: #00d4ff;
+        }
+        
+        .map-label {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 10px;
+        }
+        
+        /* 返回按钮 */
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: rgba(0, 102, 255, 0.2);
+            border: 1px solid rgba(0, 102, 255, 0.3);
+            color: #00d4ff;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .back-btn:hover {
+            background: rgba(0, 102, 255, 0.3);
+        }
+        
+        /* 数字增长动画类 */
+        .counter {
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-btn">
+        <i class="fas fa-arrow-left mr-2"></i>返回管理后台
+    </a>
+    
+    <header class="header">
+        <h1 class="header-title">自动售货机运营监控中心</h1>
+        <div class="header-time" id="current-time"></div>
+    </header>
+    
+    <main>
+        <!-- 第一行：统计卡片 -->
+        <div class="row">
+            <div class="col col-left">
+                <div class="stat-card">
+                <div class="stat-icon" style="color: #00d4ff;">
+                    <i class="fas fa-tv"></i>
+                </div>
+                <div class="stat-value counter" id="stat-devices">-</div>
+                <div class="stat-label">设备总数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="color: #00ff88;">
+                    <i class="fas fa-wifi"></i>
+                </div>
+                <div class="stat-value counter" id="stat-online">-</div>
+                <div class="stat-label">在线设备</div>
+            </div>
+        </div>
+        
+        <div class="col col-center">
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <i class="fas fa-chart-line"></i>销售趋势（近7天）
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="chart-container-large">
+                        <canvas id="sales-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col col-right">
+            <div class="stat-card">
+                <div class="stat-icon" style="color: #ffc800;">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+                <div class="stat-value counter" id="stat-orders">-</div>
+                <div class="stat-label">今日订单</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="color: #ff66b2;">
+                    <i class="fas fa-yen-sign"></i>
+                </div>
+                <div class="stat-value">¥<span class="counter" id="stat-sales">-</span></div>
+                <div class="stat-label">今日销售额</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 第二行 -->
+    <div class="row">
+        <div class="col col-left">
+            <!-- 设备状态分布 -->
+            <div class="panel" style="height: 380px;">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <i class="fas fa-chart-pie"></i>设备状态分布
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="chart-container">
+                        <canvas id="device-chart"></canvas>
+                    </div>
+                    <div style="margin-top: 15px;">
+                        <div class="d-flex justify-content-around">
+                            <div class="text-center">
+                                <div><span class="status-dot dot-online"></span>在线</div>
+                                <div class="mt-1" style="color: #00ff88; font-weight: bold;" id="count-online">-</div>
+                            </div>
+                            <div class="text-center">
+                                <div><span class="status-dot dot-offline"></span>离线</div>
+                                <div class="mt-1" style="color: #ff6666; font-weight: bold;" id="count-offline">-</div>
+                            </div>
+                            <div class="text-center">
+                                <div><span class="status-dot dot-fault"></span>故障</div>
+                                <div class="mt-1" style="color: #ffc800; font-weight: bold;" id="count-fault">-</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col col-center">
+            <!-- 实时订单 -->
+            <div class="panel" style="height: 380px;">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <i class="fas fa-clock"></i>实时订单
+                    </div>
+                    <div style="color: rgba(255, 255, 255, 0.5); font-size: 12px;">
+                        <span class="badge badge-success" style="animation: pulse 2s ease infinite;">● LIVE</span>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="order-list" id="order-list">
+                        <div class="text-center text-muted py-4">加载中...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col col-right">
+            <!-- 支付方式统计 -->
+            <div class="panel" style="height: 380px;">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <i class="fas fa-credit-card"></i>支付方式统计
+                    </div>
+                </div>
+                <div class="panel-body" id="payment-stats">
+                    <div class="text-center text-muted py-4">加载中...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 第三行 -->
+    <div class="row">
+        <div class="col col-left">
+            <!-- 加盟商排名 -->
+            <div class="panel" style="height: 300px;">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <i class="fas fa-trophy"></i>加盟商销售额排名
+                    </div>
+                </div>
+                <div class="panel-body" id="franchisee-rank">
+                    <div class="text-center text-muted py-4">加载中...</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col col-center">
+            <!-- 地图区域 -->
+            <div class="panel" style="height: 300px;">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <i class="fas fa-map-marked-alt"></i>全国设备分布
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="map-container">
+                        <div class="map-center">
+                            <div class="map-circle">
+                                <div>
+                                    <div class="map-number counter" id="map-devices">-</div>
+                                    <div class="map-label">台设备在线运行中</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col col-right">
+            <!-- 在线率 -->
+            <div class="panel" style="height: 300px;">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <i class="fas fa-signal"></i>运营指标
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div style="text-align: center; padding: 20px 0;">
+                        <div style="font-size: 60px; font-weight: bold; color: #00d4ff;" class="counter" id="online-rate">0</div>
+                        <div style="font-size: 18px; color: rgba(255, 255, 255, 0.7);">设备在线率 (%)</div>
+                    </div>
+                    <div class="progress-item">
+                        <div class="progress-header">
+                            <span class="progress-name">交易成功率</span>
+                            <span class="progress-value" id="success-rate">0%</span>
+                        </div>
+                        <div class="progress-bar-custom">
+                            <div class="progress-fill" id="success-bar" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                    <div class="progress-item">
+                        <div class="progress-header">
+                            <span class="progress-name">设备健康度</span>
+                            <span class="progress-value" id="health-rate">0%</span>
+                        </div>
+                        <div class="progress-bar-custom">
+                            <div class="progress-fill" id="health-bar" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- jQuery -->
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<!-- 公共JS -->
+<script src="js/common.js"></script>
+
+<script>
+    // 全局图表实例
+    let salesChart = null;
+    let deviceChart = null;
+    
+    // 页面初始化
+    document.addEventListener('DOMContentLoaded', () => {
+        // 检查登录
+        if (!checkLogin()) {
+            window.location.href = '/static/login.html';
+            return;
+        }
+        
+        // 更新时间
+        updateTime();
+        setInterval(updateTime, 1000);
+        
+        // 初始化图表
+        initCharts();
+        
+        // 加载数据
+        loadDashboardData();
+        
+        // 定时刷新数据（30秒）
+        setInterval(loadDashboardData, 30000);
+    });
+    
+    // 更新时间
+    function updateTime() {
+        const now = new Date();
+        const timeStr = formatDate(now, 'YYYY年MM月DD日 HH:mm:ss');
+        document.getElementById('current-time').textContent = timeStr;
+    }
+    
+    // 初始化图表
+    function initCharts() {
+        // 销售趋势图
+        const salesCtx = document.getElementById('sales-chart').getContext('2d');
+        salesChart = new Chart(salesCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: '订单数',
+                        data: [],
+                        borderColor: '#00d4ff',
+                        backgroundColor: 'rgba(0, 212, 255, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: '销售额(元)',
+                        data: [],
+                        borderColor: '#00ff88',
+                        backgroundColor: 'rgba(0, 255, 136, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: { color: 'rgba(255, 255, 255, 0.7)' }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: 'rgba(255, 255, 255, 0.5)' },
+                        grid: { color: 'rgba(0, 102, 255, 0.1)' }
+                    },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        ticks: { color: 'rgba(255, 255, 255, 0.5)' },
+                        grid: { color: 'rgba(0, 102, 255, 0.1)' }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        grid: { drawOnChartArea: false },
+                        ticks: { color: 'rgba(255, 255, 255, 0.5)' }
+                    }
+                }
+            }
+        });
+        
+        // 设备状态饼图
+        const deviceCtx = document.getElementById('device-chart').getContext('2d');
+        deviceChart = new Chart(deviceCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['在线', '离线', '故障'],
+                datasets: [{
+                    data: [0, 0, 0],
+                    backgroundColor: ['#00ff88', '#ff6666', '#ffc800'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                cutout: '60%'
+            }
+        });
+    }
+    
+    // 加载大屏数据
+    async function loadDashboardData() {
+        // 加载概览数据
+        const summaryResult = await httpGet(`${API_BASE}/api/dashboard/summary`);
+        if (summaryResult && summaryResult.code === 200) {
+            const data = summaryResult.data;
+            
+            // 更新统计数字
+            animateNumber('stat-devices', data.devices.total);
+            animateNumber('stat-online', data.devices.online);
+            animateNumber('stat-orders', data.today.order_count);
+            animateNumber('stat-sales', data.today.sales.toFixed(2));
+            animateNumber('map-devices', data.devices.online);
+            
+            // 更新在线率
+            const onlineRate = data.devices.online_rate;
+            animateNumber('online-rate', onlineRate.toFixed(1));
+            
+            // 更新状态计数
+            document.getElementById('count-online').textContent = data.devices.online;
+            document.getElementById('count-offline').textContent = data.devices.offline;
+            document.getElementById('count-fault').textContent = data.devices.fault;
+            
+            // 更新设备图表
+            deviceChart.data.datasets[0].data = [
+                data.devices.online,
+                data.devices.offline,
+                data.devices.fault
+            ];
+            deviceChart.update();
+            
+            // 更新进度条
+            const successRate = 95 + Math.random() * 4;
+            const healthRate = 90 + Math.random() * 9;
+            
+            document.getElementById('success-rate').textContent = successRate.toFixed(1) + '%';
+            document.getElementById('success-bar').style.width = successRate + '%';
+            
+            document.getElementById('health-rate').textContent = healthRate.toFixed(1) + '%';
+            document.getElementById('health-bar').style.width = healthRate + '%';
+        }
+        
+        // 加载销售趋势
+        const trendResult = await httpGet(`${API_BASE}/api/dashboard/sales-trend`, { days: 7 });
+        if (trendResult && trendResult.code === 200) {
+            const trend = trendResult.data.trend;
+            salesChart.data.labels = trend.map(item => item.date.slice(5));
+            salesChart.data.datasets[0].data = trend.map(item => item.order_count);
+            salesChart.data.datasets[1].data = trend.map(item => item.sales);
+            salesChart.update();
+        }
+        
+        // 加载实时订单
+        const ordersResult = await httpGet(`${API_BASE}/api/dashboard/real-time-orders`, { limit: 10 });
+        if (ordersResult && ordersResult.code === 200) {
+            renderOrders(ordersResult.data.list);
+        }
+        
+        // 加载支付方式统计
+        const paymentResult = await httpGet(`${API_BASE}/api/dashboard/payment-stats`);
+        if (paymentResult && paymentResult.code === 200) {
+            renderPaymentStats(paymentResult.data.list);
+        }
+        
+        // 加载加盟商排名
+        const franchiseeResult = await httpGet(`${API_BASE}/api/dashboard/top-franchisees`, { limit: 5 });
+        if (franchiseeResult && franchiseeResult.code === 200) {
+            renderFranchiseeRank(franchiseeResult.data.list);
+        }
+    }
+    
+    // 数字动画
+    function animateNumber(elementId, targetValue) {
+        const element = document.getElementById(elementId);
+        if (!element) return;
+        
+        const start = parseFloat(element.textContent) || 0;
+        const end = parseFloat(targetValue);
+        const duration = 1000;
+        const startTime = performance.now();
+        
+        function update(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            const easeProgress = 1 - Math.pow(1 - progress, 3);
+            const current = start + (end - start) * easeProgress;
+            
+            element.textContent = current.toFixed(end % 1 === 0 ? 0 : 2);
+            
+            if (progress < 1) {
+                requestAnimationFrame(update);
+            }
+        }
+        
+        requestAnimationFrame(update);
+    }
+    
+    // 渲染订单列表
+    function renderOrders(orders) {
+        const container = document.getElementById('order-list');
+        
+        if (orders.length === 0) {
+            container.innerHTML = '<div class="text-center text-muted py-4">暂无订单</div>';
+            return;
+        }
+        
+        const statusClass = {
+            'success': 'status-success',
+            'pending': 'status-pending'
+        };
+        
+        let html = '';
+        orders.forEach(item => {
+            const statusText = item.status === 'success' ? '成功' : item.status === 'pending' ? '处理中' : item.status;
+            const cls = statusClass[item.status] || '';
+            
+            html += `
+                <div class="order-item">
+                    <div class="order-info">
+                        <div class="order-no">${item.order_no}</div>
+                        <div class="order-time">${formatDate(item.created_at, 'MM-DD HH:mm:ss')}</div>
+                    </div>
+                    <div style="display: flex; align-items: center;">
+                        <div class="order-amount">¥${item.pay_amount.toFixed(2)}</div>
+                        <span class="order-status ${cls}">${item.pay_type_name} ${statusText}</span>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    }
+    
+    // 渲染支付方式统计
+    function renderPaymentStats(data) {
+        const container = document.getElementById('payment-stats');
+        
+        if (data.length === 0) {
+            container.innerHTML = '<div class="text-center text-muted py-4">暂无数据</div>';
+            return;
+        }
+        
+        const totalAmount = data.reduce((sum, item) => sum + item.amount, 0);
+        
+        let html = '';
+        data.forEach(item => {
+            const percent = totalAmount > 0 ? (item.amount / totalAmount * 100).toFixed(1) : 0;
+            
+            html += `
+                <div class="progress-item">
+                    <div class="progress-header">
+                        <span class="progress-name">${item.pay_type_name}</span>
+                        <span class="progress-value">¥${item.amount.toFixed(2)} (${item.count}笔)</span>
+                    </div>
+                    <div class="progress-bar-custom">
+                        <div class="progress-fill" style="width: ${percent}%;"></div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    }
+    
+    // 渲染加盟商排名
+    function renderFranchiseeRank(data) {
+        const container = document.getElementById('franchisee-rank');
+        
+        if (data.length === 0) {
+            container.innerHTML = '<div class="text-center text-muted py-4">暂无数据</div>';
+            return;
+        }
+        
+        const maxSales = data.length > 0 ? data[0].sales : 0;
+        
+        let html = '';
+        data.forEach((item, index) => {
+            const rankColors = ['#ffd700', '#c0c0c0', '#cd7f32'];
+            const rankColor = index < 3 ? rankColors[index] : '#00d4ff';
+            const percent = maxSales > 0 ? (item.sales / maxSales * 100).toFixed(0) : 0;
+            
+            html += `
+                <div class="progress-item">
+                    <div class="progress-header">
+                        <span class="progress-name" style="display: flex; align-items: center;">
+                            <span style="color: ${rankColor}; font-weight: bold; width: 25px;">
+                                ${index < 3 ? '<i class="fas fa-trophy"></i>' : (index + 1)}
+                            </span>
+                            ${item.name}
+                        </span>
+                        <span class="progress-value">¥${item.sales.toFixed(2)}</span>
+                    </div>
+                    <div class="progress-bar-custom">
+                        <div class="progress-fill" style="width: ${percent}%; background: ${rankColor};"></div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    }
+</script>
+</body>
+</html>

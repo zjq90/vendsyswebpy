@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>仪表盘 - 自动售货机管理系统</title>
+    
+    <!-- Bootstrap 4 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
+    <!-- AdminLTE 风格 CSS -->
+    <style>
+        body {
+            background-color: #f4f6f9;
+        }
+        
+        .wrapper {
+            display: flex;
+            min-height: 100vh;
+            flex-direction: column;
+        }
+        
+        .main-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 56px;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .logo {
+            color: white;
+            font-size: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+        }
+        
+        .logo i {
+            margin-right: 8px;
+        }
+        
+        .header-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+        }
+        
+        .user-dropdown {
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            padding: 5px 10px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        
+        .user-dropdown:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .main-sidebar {
+            background: #343a40;
+            width: 250px;
+            min-height: calc(100vh - 56px);
+            transition: all 0.3s;
+        }
+        
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .sidebar-menu .nav-item {
+            list-style: none;
+        }
+        
+        .sidebar-menu .nav-link {
+            color: #c2c7d0;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+        
+        .sidebar-menu .nav-link:hover {
+            color: white;
+            background: rgba(255,255,255,0.05);
+        }
+        
+        .sidebar-menu .nav-link.active {
+            color: white;
+            background: rgba(255,255,255,0.1);
+            border-left-color: #667eea;
+        }
+        
+        .sidebar-menu .nav-link .nav-icon {
+            width: 25px;
+            text-align: center;
+            margin-right: 10px;
+        }
+        
+        .sidebar-menu .nav-header {
+            padding: 12px 20px;
+            color: #6c757d;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .sidebar-menu .nav-treeview {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            background: rgba(0,0,0,0.1);
+        }
+        
+        .sidebar-menu .nav-treeview .nav-link {
+            padding: 10px 20px 10px 55px;
+            font-size: 14px;
+        }
+        
+        .content-wrapper {
+            flex: 1;
+            padding: 20px;
+            overflow: auto;
+        }
+        
+        .page-header {
+            margin-bottom: 20px;
+        }
+        
+        .page-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+        }
+        
+        .breadcrumb {
+            background: transparent;
+            padding: 0;
+            margin: 5px 0 0 0;
+        }
+        
+        .breadcrumb-item a {
+            color: #667eea;
+        }
+        
+        .card {
+            border: none;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            border-radius: 8px;
+        }
+        
+        .card-header {
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+            padding: 15px 20px;
+        }
+        
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0;
+            color: #333;
+        }
+        
+        .info-box {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        
+        .info-box-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: white;
+        }
+        
+        .info-box-content {
+            margin-left: 15px;
+            flex: 1;
+        }
+        
+        .info-box-text {
+            color: #6c757d;
+            font-size: 14px;
+            margin: 0;
+        }
+        
+        .info-box-number {
+            font-size: 28px;
+            font-weight: 600;
+            color: #333;
+            margin: 5px 0 0 0;
+        }
+        
+        .info-box-number small {
+            font-size: 14px;
+            color: #6c757d;
+            font-weight: normal;
+        }
+        
+        .bg-gradient-purple {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .bg-gradient-green {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+        
+        .bg-gradient-orange {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .bg-gradient-blue {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        .table th {
+            border-top: none;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .table td {
+            vertical-align: middle;
+            color: #666;
+        }
+        
+        .btn {
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-weight: 500;
+        }
+        
+        .btn-sm {
+            padding: 4px 10px;
+            font-size: 13px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%);
+        }
+        
+        .badge {
+            padding: 6px 10px;
+            font-weight: 500;
+        }
+        
+        .modal-content {
+            border-radius: 12px;
+            border: none;
+        }
+        
+        .modal-header {
+            border-bottom: 1px solid #e9ecef;
+            padding: 15px 20px;
+        }
+        
+        .modal-title {
+            font-weight: 600;
+        }
+        
+        .form-control {
+            border-radius: 6px;
+            padding: 10px 15px;
+        }
+        
+        .form-control:focus {
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            border-color: #667eea;
+        }
+        
+        .pagination .page-link {
+            color: #667eea;
+        }
+        
+        .pagination .page-item.active .page-link {
+            background: #667eea;
+            border-color: #667eea;
+        }
+        
+        .search-box {
+            margin-bottom: 20px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        
+        .search-box .form-control {
+            padding: 8px 12px;
+            height: 38px;
+        }
+        
+        .search-box .btn {
+            padding: 8px 16px;
+            height: 38px;
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0 0 15px 0;
+            color: #333;
+        }
+        
+        .progress-circle {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            position: relative;
+        }
+        
+        .progress-circle span {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        
+        .status-online { background: #28a745; }
+        .status-offline { background: #6c757d; }
+        .status-fault { background: #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <!-- 头部 -->
+        <header class="main-header">
+            <div class="logo">
+                <i class="fas fa-cash-register"></i>
+                <span class="d-none d-sm-inline">自动售货机管理系统</span>
+            </div>
+            <div class="header-right">
+                <div class="dropdown">
+                    <div class="user-dropdown" id="user-dropdown" data-toggle="dropdown">
+                        <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=user%20avatar%20icon%20simple&image_size=square" 
+                             class="img-circle elevation-2" alt="User Image" 
+                             style="width: 32px; height: 32px; object-fit: cover; margin-right: 8px;">
+                        <span class="d-none d-md-inline" id="username-display">用户</span>
+                        <i class="fas fa-chevron-down ml-2"></i>
+                    </div>
+                    <div class="dropdown-menu dropdown-menu-right">
+                        <a class="dropdown-item" href="javascript:void(0)" onclick="showChangePassword()">
+                            <i class="fas fa-key mr-2"></i>修改密码
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="javascript:void(0)" id="logout-btn">
+                            <i class="fas fa-sign-out-alt mr-2"></i>退出登录
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- 主内容区域 -->
+        <div class="d-flex">
+            <!-- 侧边栏 -->
+            <aside class="main-sidebar">
+                <nav class="mt-2">
+                    <ul class="sidebar-menu" id="sidebar-menu">
+                        <!-- 菜单由JS动态渲染 -->
+                    </ul>
+                </nav>
+            </aside>
+            
+            <!-- 内容区域 -->
+            <main class="content-wrapper flex-grow-1">
+                <div class="page-header">
+                    <h1 class="page-title">仪表盘</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="#">首页</a></li>
+                            <li class="breadcrumb-item active">仪表盘</li>
+                        </ol>
+                    </nav>
+                </div>
+                
+                <!-- 统计卡片 -->
+                <div class="row" id="stats-container">
+                    <div class="col-lg-3 col-6">
+                        <div class="info-box">
+                            <span class="info-box-icon bg-gradient-purple">
+                                <i class="fas fa-tv"></i>
+                            </span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">设备总数</span>
+                                <span class="info-box-number" id="total-devices">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-6">
+                        <div class="info-box">
+                            <span class="info-box-icon bg-gradient-green">
+                                <i class="fas fa-building"></i>
+                            </span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">加盟商数</span>
+                                <span class="info-box-number" id="total-franchisees">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-6">
+                        <div class="info-box">
+                            <span class="info-box-icon bg-gradient-orange">
+                                <i class="fas fa-shopping-cart"></i>
+                            </span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">今日订单</span>
+                                <span class="info-box-number" id="today-orders">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-6">
+                        <div class="info-box">
+                            <span class="info-box-icon bg-gradient-blue">
+                                <i class="fas fa-yen-sign"></i>
+                            </span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">今日销售额</span>
+                                <span class="info-box-number" id="today-sales">¥<small>-</small></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 图表区域 -->
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="chart-container">
+                            <h5 class="chart-title">
+                                <i class="fas fa-chart-line mr-2"></i>销售趋势（近7天）
+                            </h5>
+                            <div id="sales-chart" style="height: 250px; display: flex; align-items: center; justify-content: center;">
+                                <div class="text-muted">加载中...</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="chart-container">
+                            <h5 class="chart-title">
+                                <i class="fas fa-pie-chart mr-2"></i>设备状态分布
+                            </h5>
+                            <div id="device-status-chart" style="height: 250px; display: flex; align-items: center; justify-content: center;">
+                                <div class="text-muted">加载中...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="chart-container">
+                            <h5 class="chart-title">
+                                <i class="fas fa-trophy mr-2"></i>加盟商销售额排名（今日）
+                            </h5>
+                            <div id="top-franchisees" style="min-height: 200px;">
+                                <div class="text-muted text-center py-4">加载中...</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="chart-container">
+                            <h5 class="chart-title">
+                                <i class="fas fa-credit-card mr-2"></i>支付方式统计（今日）
+                            </h5>
+                            <div id="payment-stats" style="min-height: 200px;">
+                                <div class="text-muted text-center py-4">加载中...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 实时订单 -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-clock mr-2"></i>实时订单
+                        </h3>
+                    </div>
+                    <div class="card-body table-responsive p-0">
+                        <table class="table table-hover text-nowrap">
+                            <thead>
+                                <tr>
+                                    <th>订单号</th>
+                                    <th>金额</th>
+                                    <th>支付方式</th>
+                                    <th>状态</th>
+                                    <th>时间</th>
+                                </tr>
+                            </thead>
+                            <tbody id="orders-tbody">
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">加载中...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <!-- 修改密码模态框 -->
+    <div class="modal fade" id="password-modal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">修改密码</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <form id="password-form">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>原密码</label>
+                            <input type="password" class="form-control" name="old_password" required>
+                        </div>
+                        <div class="form-group">
+                            <label>新密码</label>
+                            <input type="password" class="form-control" name="new_password" required>
+                        </div>
+                        <div class="form-group">
+                            <label>确认新密码</label>
+                            <input type="password" class="form-control" id="confirm-password" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                        <button type="submit" class="btn btn-primary">确认修改</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- jQuery -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"></script>
+    <!-- Bootstrap 4 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <!-- 公共JS -->
+    <script src="js/common.js"></script>
+    
+    <script>
+        // 全局变量
+        let salesChart = null;
+        let deviceChart = null;
+        
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            initPage();
+            loadDashboardData();
+            initPasswordForm();
+            
+            // 每分钟刷新一次数据
+            setInterval(loadDashboardData, 60000);
+        });
+        
+        // 显示修改密码弹窗
+        function showChangePassword() {
+            document.getElementById('password-form').reset();
+            $('#password-modal').modal('show');
+        }
+        
+        // 初始化密码修改表单
+        function initPasswordForm() {
+            document.getElementById('password-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const formData = getFormData('password-form');
+                const confirmPwd = document.getElementById('confirm-password').value;
+                
+                if (formData.new_password !== confirmPwd) {
+                    showToast('两次输入的密码不一致', 'error');
+                    return;
+                }
+                
+                const result = await httpPut(`${API_BASE}/api/auth/password`, {
+                    old_password: formData.old_password,
+                    new_password: formData.new_password
+                });
+                
+                if (result && result.code === 200) {
+                    showToast('密码修改成功', 'success');
+                    $('#password-modal').modal('hide');
+                }
+            });
+        }
+        
+        // 加载仪表盘数据
+        async function loadDashboardData() {
+            // 加载概览数据
+            const summaryResult = await httpGet(`${API_BASE}/api/dashboard/summary`);
+            if (summaryResult && summaryResult.code === 200) {
+                const data = summaryResult.data;
+                
+                document.getElementById('total-devices').textContent = data.devices.total;
+                document.getElementById('total-franchisees').textContent = data.franchisees.total;
+                document.getElementById('today-orders').textContent = data.today.order_count;
+                document.getElementById('today-sales').innerHTML = `¥<small>${data.today.sales.toFixed(2)}</small>`;
+            }
+            
+            // 加载销售趋势
+            const trendResult = await httpGet(`${API_BASE}/api/dashboard/sales-trend`, { days: 7 });
+            if (trendResult && trendResult.code === 200) {
+                renderSalesChart(trendResult.data.trend);
+            }
+            
+            // 加载设备状态
+            const statusResult = await httpGet(`${API_BASE}/api/dashboard/device-status`);
+            if (statusResult && statusResult.code === 200) {
+                renderDeviceChart(statusResult.data.list);
+            }
+            
+            // 加载加盟商排名
+            const franchiseesResult = await httpGet(`${API_BASE}/api/dashboard/top-franchisees`, { limit: 5 });
+            if (franchiseesResult && franchiseesResult.code === 200) {
+                renderTopFranchisees(franchiseesResult.data.list);
+            }
+            
+            // 加载支付统计
+            const paymentResult = await httpGet(`${API_BASE}/api/dashboard/payment-stats`);
+            if (paymentResult && paymentResult.code === 200) {
+                renderPaymentStats(paymentResult.data.list);
+            }
+            
+            // 加载实时订单
+            const ordersResult = await httpGet(`${API_BASE}/api/dashboard/real-time-orders`, { limit: 10 });
+            if (ordersResult && ordersResult.code === 200) {
+                renderOrders(ordersResult.data.list);
+            }
+        }
+        
+        // 渲染销售趋势图
+        function renderSalesChart(data) {
+            const ctx = document.createElement('canvas');
+            const container = document.getElementById('sales-chart');
+            container.innerHTML = '';
+            container.appendChild(ctx);
+            
+            const labels = data.map(item => item.date.slice(5));
+            const orderData = data.map(item => item.order_count);
+            const salesData = data.map(item => item.sales);
+            
+            if (salesChart) {
+                salesChart.destroy();
+            }
+            
+            salesChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '订单数',
+                            data: orderData,
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: '销售额(元)',
+                            data: salesData,
+                            borderColor: '#38ef7d',
+                            backgroundColor: 'rgba(56, 239, 125, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left'
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            grid: { drawOnChartArea: false }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'top' }
+                    }
+                }
+            });
+        }
+        
+        // 渲染设备状态图
+        function renderDeviceChart(data) {
+            const ctx = document.createElement('canvas');
+            const container = document.getElementById('device-status-chart');
+            container.innerHTML = '';
+            container.appendChild(ctx);
+            
+            const labels = data.map(item => item.status_name);
+            const values = data.map(item => item.count);
+            const colors = ['#28a745', '#6c757d', '#dc3545'];
+            
+            if (deviceChart) {
+                deviceChart.destroy();
+            }
+            
+            deviceChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: colors,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+        
+        // 渲染加盟商排名
+        function renderTopFranchisees(data) {
+            const container = document.getElementById('top-franchisees');
+            
+            if (data.length === 0) {
+                container.innerHTML = '<div class="text-center text-muted py-4">暂无数据</div>';
+                return;
+            }
+            
+            let html = '';
+            data.forEach((item, index) => {
+                const rankColors = ['#ffc107', '#6c757d', '#fd7e14'];
+                const rankColor = index < 3 ? rankColors[index] : '#6c757d';
+                const rankIcon = index < 3 ? '<i class="fas fa-trophy"></i>' : (index + 1);
+                
+                html += `
+                    <div class="d-flex align-items-center py-2 border-bottom">
+                        <div class="text-center mr-3" style="width: 30px; color: ${rankColor};">
+                            ${rankIcon}
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="font-weight-medium">${item.name}</span>
+                                <span class="text-primary">¥${item.sales.toFixed(2)}</span>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar bg-gradient-purple" style="width: ${(item.sales / (data[0].sales || 1) * 100).toFixed(0)}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        // 渲染支付统计
+        function renderPaymentStats(data) {
+            const container = document.getElementById('payment-stats');
+            
+            if (data.length === 0) {
+                container.innerHTML = '<div class="text-center text-muted py-4">暂无数据</div>';
+                return;
+            }
+            
+            let html = '';
+            data.forEach(item => {
+                html += `
+                    <div class="d-flex align-items-center py-2 border-bottom">
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="font-weight-medium">${item.pay_type_name}</span>
+                                <span>¥${item.amount.toFixed(2)} (${item.count}笔)</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        // 渲染订单列表
+        function renderOrders(data) {
+            const tbody = document.getElementById('orders-tbody');
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">暂无订单</td></tr>';
+                return;
+            }
+            
+            const statusColors = {
+                'success': 'badge-success',
+                'pending': 'badge-warning',
+                'failed': 'badge-danger',
+                'refunded': 'badge-secondary'
+            };
+            
+            let html = '';
+            data.forEach(item => {
+                html += `
+                    <tr>
+                        <td>${item.order_no}</td>
+                        <td>¥${item.pay_amount.toFixed(2)}</td>
+                        <td>${item.pay_type_name}</td>
+                        <td><span class="badge ${statusColors[item.status] || 'badge-secondary'}">${item.status_name}</span></td>
+                        <td>${formatDate(item.created_at, 'MM-DD HH:mm')}</td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
+        }
+    </script>
+</body>
+</html>

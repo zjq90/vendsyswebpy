@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>角色管理 - 自动售货机管理系统</title>
+    
+    <!-- Bootstrap 4 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
+    <!-- 样式 -->
+    <style>
+        body { background-color: #f4f6f9; }
+        .wrapper { display: flex; min-height: 100vh; flex-direction: column; }
+        .main-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 56px; display: flex; align-items: center; padding: 0 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .logo { color: white; font-size: 20px; font-weight: 600; display: flex; align-items: center; }
+        .logo i { margin-right: 8px; }
+        .header-right { margin-left: auto; display: flex; align-items: center; }
+        .user-dropdown { color: white; cursor: pointer; display: flex; align-items: center; padding: 5px 10px; border-radius: 4px; transition: background 0.2s; }
+        .user-dropdown:hover { background: rgba(255,255,255,0.1); }
+        .main-sidebar { background: #343a40; width: 250px; min-height: calc(100vh - 56px); transition: all 0.3s; }
+        .sidebar-menu { list-style: none; padding: 0; margin: 0; }
+        .sidebar-menu .nav-item { list-style: none; }
+        .sidebar-menu .nav-link { color: #c2c7d0; padding: 12px 20px; display: flex; align-items: center; text-decoration: none; transition: all 0.2s; border-left: 3px solid transparent; }
+        .sidebar-menu .nav-link:hover { color: white; background: rgba(255,255,255,0.05); }
+        .sidebar-menu .nav-link.active { color: white; background: rgba(255,255,255,0.1); border-left-color: #667eea; }
+        .sidebar-menu .nav-link .nav-icon { width: 25px; text-align: center; margin-right: 10px; }
+        .sidebar-menu .nav-header { padding: 12px 20px; color: #6c757d; font-size: 12px; font-weight: 600; text-transform: uppercase; }
+        .sidebar-menu .nav-treeview { list-style: none; padding: 0; margin: 0; background: rgba(0,0,0,0.1); }
+        .sidebar-menu .nav-treeview .nav-link { padding: 10px 20px 10px 55px; font-size: 14px; }
+        .content-wrapper { flex: 1; padding: 20px; overflow: auto; }
+        .page-header { margin-bottom: 20px; }
+        .page-title { font-size: 24px; font-weight: 600; color: #333; margin: 0; }
+        .breadcrumb { background: transparent; padding: 0; margin: 5px 0 0 0; }
+        .breadcrumb-item a { color: #667eea; }
+        .card { border: none; box-shadow: 0 2px 12px rgba(0,0,0,0.08); border-radius: 8px; }
+        .card-header { background: white; border-bottom: 1px solid #e9ecef; padding: 15px 20px; }
+        .card-title { font-size: 16px; font-weight: 600; margin: 0; color: #333; }
+        .table th { border-top: none; font-weight: 600; color: #495057; }
+        .table td { vertical-align: middle; color: #666; }
+        .btn { border-radius: 6px; padding: 8px 16px; font-weight: 500; }
+        .btn-sm { padding: 4px 10px; font-size: 13px; }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; }
+        .btn-primary:hover { background: linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%); }
+        .badge { padding: 6px 10px; font-weight: 500; }
+        .modal-content { border-radius: 12px; border: none; }
+        .modal-header { border-bottom: 1px solid #e9ecef; padding: 15px 20px; }
+        .modal-title { font-weight: 600; }
+        .form-control { border-radius: 6px; padding: 10px 15px; }
+        .form-control:focus { box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25); border-color: #667eea; }
+        .pagination .page-link { color: #667eea; }
+        .pagination .page-item.active .page-link { background: #667eea; border-color: #667eea; }
+        .search-box { margin-bottom: 20px; background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+        .search-box .form-control { padding: 8px 12px; height: 38px; }
+        .search-box .btn { padding: 8px 16px; height: 38px; }
+        .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+        .status-active { background: #28a745; }
+        .status-inactive { background: #dc3545; }
+        .permission-tree { max-height: 450px; overflow-y: auto; padding: 10px; }
+        .permission-group { margin-bottom: 10px; border: 1px solid #e9ecef; border-radius: 8px; overflow: hidden; }
+        .permission-group-header { 
+            background: #f8f9fa; 
+            padding: 12px 15px; 
+            display: flex; 
+            align-items: center;
+            cursor: pointer;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .permission-group-header:hover { background: #e9ecef; }
+        .permission-group-header.collapsed .toggle-icon { transform: rotate(-90deg); }
+        .toggle-icon { 
+            margin-right: 10px; 
+            transition: transform 0.3s;
+            color: #667eea;
+        }
+        .permission-children { 
+            padding: 10px 15px 10px 30px; 
+            display: block;
+        }
+        .permission-children.collapsed { display: none; }
+        .permission-item { 
+            padding: 8px 0; 
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .permission-item:last-child { border-bottom: none; }
+        .permission-checkbox { margin-right: 10px; transform: scale(1.1); }
+        .permission-label { 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            margin: 0;
+            flex: 1;
+        }
+        .permission-name { color: #333; font-weight: 500; }
+        .permission-code { 
+            font-size: 12px; 
+            color: #999; 
+            margin-left: 10px; 
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .permission-badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            margin-right: 8px;
+        }
+        .permission-toolbar {
+            padding: 10px 15px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        .permission-stats {
+            margin-right: auto;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <!-- 头部 -->
+        <header class="main-header">
+            <div class="logo">
+                <i class="fas fa-cash-register"></i>
+                <span class="d-none d-sm-inline">自动售货机管理系统</span>
+            </div>
+            <div class="header-right">
+                <div class="dropdown">
+                    <div class="user-dropdown" id="user-dropdown" data-toggle="dropdown">
+                        <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=user%20avatar%20icon%20simple&image_size=square" 
+                             class="img-circle elevation-2" alt="User Image" 
+                             style="width: 32px; height: 32px; object-fit: cover; margin-right: 8px;">
+                        <span class="d-none d-md-inline" id="username-display">用户</span>
+                        <i class="fas fa-chevron-down ml-2"></i>
+                    </div>
+                    <div class="dropdown-menu dropdown-menu-right">
+                        <a class="dropdown-item" href="javascript:void(0)" onclick="showChangePassword()">
+                            <i class="fas fa-key mr-2"></i>修改密码
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="javascript:void(0)" id="logout-btn">
+                            <i class="fas fa-sign-out-alt mr-2"></i>退出登录
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- 主内容区域 -->
+        <div class="d-flex">
+            <!-- 侧边栏 -->
+            <aside class="main-sidebar">
+                <nav class="mt-2">
+                    <ul class="sidebar-menu" id="sidebar-menu">
+                        <!-- 菜单由JS动态渲染 -->
+                    </ul>
+                </nav>
+            </aside>
+            
+            <!-- 内容区域 -->
+            <main class="content-wrapper flex-grow-1">
+                <div class="page-header">
+                    <h1 class="page-title">角色管理</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="index.html">首页</a></li>
+                            <li class="breadcrumb-item active">角色管理</li>
+                        </ol>
+                    </nav>
+                </div>
+                
+                <!-- 搜索区域 -->
+                <div class="search-box">
+                    <form id="search-form" class="form-inline">
+                        <div class="form-group mr-3 mb-2">
+                            <label class="mr-2">角色名称:</label>
+                            <input type="text" class="form-control" name="name" placeholder="请输入角色名称">
+                        </div>
+                        <div class="form-group mr-3 mb-2">
+                            <label class="mr-2">状态:</label>
+                            <select class="form-control" name="is_active">
+                                <option value="">全部</option>
+                                <option value="true">启用</option>
+                                <option value="false">禁用</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary mb-2 mr-2">
+                            <i class="fas fa-search mr-1"></i>搜索
+                        </button>
+                        <button type="button" class="btn btn-secondary mb-2" onclick="resetSearch()">
+                            <i class="fas fa-redo mr-1"></i>重置
+                        </button>
+                    </form>
+                </div>
+                
+                <!-- 操作按钮 -->
+                <div class="mb-3">
+                    <button type="button" class="btn btn-primary" onclick="showAddModal()">
+                        <i class="fas fa-plus mr-1"></i>新增角色
+                    </button>
+                </div>
+                
+                <!-- 数据表格 -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-list mr-2"></i>角色列表
+                        </h3>
+                    </div>
+                    <div class="card-body table-responsive p-0">
+                        <table class="table table-hover text-nowrap">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>角色名称</th>
+                                    <th>角色编码</th>
+                                    <th>描述</th>
+                                    <th>权限数</th>
+                                    <th>用户数</th>
+                                    <th>系统内置</th>
+                                    <th>状态</th>
+                                    <th>创建时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="data-tbody">
+                                <tr>
+                                    <td colspan="10" class="text-center text-muted py-4">加载中...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card-footer">
+                        <div id="pagination-container"></div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <!-- 新增/编辑角色模态框 -->
+    <div class="modal fade" id="role-modal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="role-modal-title">新增角色</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <form id="role-form">
+                    <input type="hidden" name="id">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>角色名称 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="name" required placeholder="请输入角色名称">
+                        </div>
+                        <div class="form-group">
+                            <label>角色编码 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="code" required placeholder="请输入角色编码">
+                        </div>
+                        <div class="form-group">
+                            <label>描述</label>
+                            <textarea class="form-control" name="description" rows="3" placeholder="请输入描述"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                        <button type="submit" class="btn btn-primary">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 分配权限模态框 -->
+    <div class="modal fade" id="permission-modal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-key mr-2"></i>分配权限
+                        <span class="text-muted" id="permission-role-name" style="font-size: 14px; font-weight: normal;"></span>
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <form id="permission-form">
+                    <input type="hidden" name="role_id">
+                    <div class="modal-body">
+                        <div class="permission-toolbar">
+                            <span class="permission-stats">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                已选择: <span id="selected-count">0</span> 个权限
+                            </span>
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="checkAllPermissions()">
+                                <i class="fas fa-check-double mr-1"></i>全选
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="uncheckAllPermissions()">
+                                <i class="fas fa-times mr-1"></i>取消全选
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-info" onclick="expandAllPermissions()">
+                                <i class="fas fa-plus-square mr-1"></i>展开全部
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-info" onclick="collapseAllPermissions()">
+                                <i class="fas fa-minus-square mr-1"></i>折叠全部
+                            </button>
+                        </div>
+                        <div class="permission-tree" id="permission-tree">
+                            <!-- 权限树由JS渲染 -->
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times mr-1"></i>取消
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save mr-1"></i>保存权限
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 修改密码模态框 -->
+    <div class="modal fade" id="password-modal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">修改密码</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <form id="password-form">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>原密码</label>
+                            <input type="password" class="form-control" name="old_password" required>
+                        </div>
+                        <div class="form-group">
+                            <label>新密码</label>
+                            <input type="password" class="form-control" name="new_password" required>
+                        </div>
+                        <div class="form-group">
+                            <label>确认新密码</label>
+                            <input type="password" class="form-control" id="confirm-password" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                        <button type="submit" class="btn btn-primary">确认修改</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- jQuery -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"></script>
+    <!-- Bootstrap 4 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- 公共JS -->
+    <script src="js/common.js"></script>
+    
+    <script>
+        // 全局变量
+        let currentPage = 1;
+        let pageSize = 10;
+        let searchParams = {};
+        let allPermissions = [];
+        let currentEditingRoleName = '';
+        
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            initPage();
+            loadData();
+            initForms();
+        });
+        
+        // 显示修改密码弹窗
+        function showChangePassword() {
+            document.getElementById('password-form').reset();
+            $('#password-modal').modal('show');
+        }
+        
+        // 初始化表单
+        function initForms() {
+            // 搜索表单
+            document.getElementById('search-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                searchParams = getFormData('search-form');
+                currentPage = 1;
+                loadData();
+            });
+            
+            // 角色表单
+            document.getElementById('role-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = getFormData('role-form');
+                const id = formData.id;
+                delete formData.id;
+                
+                let result;
+                if (id) {
+                    result = await httpPut(`${API_BASE}/api/roles/${id}`, formData);
+                } else {
+                    result = await httpPost(`${API_BASE}/api/roles`, formData);
+                }
+                
+                if (result && result.code === 200) {
+                    showToast(id ? '更新成功' : '创建成功', 'success');
+                    $('#role-modal').modal('hide');
+                    loadData();
+                }
+            });
+            
+            // 权限表单
+            document.getElementById('permission-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const roleId = document.querySelector('[name="role_id"]').value;
+                
+                // 获取选中的权限ID
+                const checkboxes = document.querySelectorAll('#permission-tree input[type="checkbox"]:checked');
+                const permissionIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+                
+                const result = await httpPut(`${API_BASE}/api/roles/${roleId}/permissions`, {
+                    permission_ids: permissionIds
+                });
+                
+                if (result && result.code === 200) {
+                    showToast('权限更新成功', 'success');
+                    $('#permission-modal').modal('hide');
+                    loadData();
+                }
+            });
+            
+            // 密码表单
+            document.getElementById('password-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = getFormData('password-form');
+                const confirmPwd = document.getElementById('confirm-password').value;
+                
+                // 表单验证
+                if (!formData.old_password || !formData.new_password || !confirmPwd) {
+                    showToast('请填写完整信息', 'error');
+                    return;
+                }
+                
+                if (formData.new_password !== confirmPwd) {
+                    showToast('两次输入的密码不一致', 'error');
+                    return;
+                }
+                
+                if (formData.new_password.length < 6 || formData.new_password.length > 32) {
+                    showToast('密码长度应为 6-32 位', 'error');
+                    return;
+                }
+                
+                const result = await httpPut(`${API_BASE}/api/auth/password`, {
+                    old_password: formData.old_password,
+                    new_password: formData.new_password
+                });
+                
+                if (result && result.code === 200) {
+                    showToast('密码修改成功', 'success');
+                    $('#password-modal').modal('hide');
+                }
+            });
+        }
+        
+        // 重置搜索
+        function resetSearch() {
+            document.getElementById('search-form').reset();
+            searchParams = {};
+            currentPage = 1;
+            loadData();
+        }
+        
+        // 加载数据
+        async function loadData() {
+            const params = {
+                page: currentPage,
+                page_size: pageSize,
+                ...searchParams
+            };
+            
+            const result = await httpGet(`${API_BASE}/api/roles`, params);
+            
+            if (result && result.code === 200) {
+                renderTable(result.data.list);
+                renderPagination(result.total);
+            }
+        }
+        
+        // 渲染表格
+        function renderTable(data) {
+            const tbody = document.getElementById('data-tbody');
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-4">暂无数据</td></tr>';
+                return;
+            }
+            
+            let html = '';
+            data.forEach(item => {
+                const statusClass = item.is_active ? 'status-active' : 'status-inactive';
+                const statusText = item.is_active ? '启用' : '禁用';
+                const systemText = item.is_system ? '<span class="badge badge-info">是</span>' : '<span class="badge badge-secondary">否</span>';
+                
+                html += `
+                    <tr>
+                        <td>${item.id}</td>
+                        <td>${item.name}</td>
+                        <td><code>${item.code}</code></td>
+                        <td>${item.description || '-'}</td>
+                        <td><span class="badge badge-info">${item.permission_count}</span></td>
+                        <td><span class="badge badge-warning">${item.user_count}</span></td>
+                        <td>${systemText}</td>
+                        <td>
+                            <span class="${statusClass} status-dot"></span>${statusText}
+                        </td>
+                        <td>${formatDate(item.created_at, 'MM-DD HH:mm')}</td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-primary mr-1" onclick="showEditModal(${item.id})" ${item.is_system ? 'disabled' : ''} title="编辑">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-warning mr-1" onclick="showPermissionModal(${item.id}, '${item.name}')" title="分配权限">
+                                <i class="fas fa-key"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-danger" onclick="deleteItem(${item.id}, '${item.name}')" ${item.is_system ? 'disabled' : ''} title="删除">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
+        }
+        
+        // 渲染分页
+        function renderPagination(total) {
+            const totalPages = Math.ceil(total / pageSize);
+            renderPagination('pagination-container', currentPage, totalPages, total, (page) => {
+                currentPage = page;
+                loadData();
+            });
+        }
+        
+        // 显示新增弹窗
+        function showAddModal() {
+            document.getElementById('role-modal-title').textContent = '新增角色';
+            document.getElementById('role-form').reset();
+            document.querySelector('[name="id"]').value = '';
+            $('#role-modal').modal('show');
+        }
+        
+        // 显示编辑弹窗
+        async function showEditModal(id) {
+            const result = await httpGet(`${API_BASE}/api/roles/${id}`);
+            
+            if (result && result.code === 200) {
+                document.getElementById('role-modal-title').textContent = '编辑角色';
+                document.querySelector('[name="id"]').value = result.data.id;
+                document.querySelector('[name="name"]').value = result.data.name;
+                document.querySelector('[name="code"]').value = result.data.code;
+                document.querySelector('[name="description"]').value = result.data.description || '';
+                $('#role-modal').modal('show');
+            }
+        }
+        
+        // 显示权限分配弹窗
+        async function showPermissionModal(roleId, roleName) {
+            currentEditingRoleName = roleName;
+            document.querySelector('[name="role_id"]').value = roleId;
+            document.getElementById('permission-role-name').textContent = `- ${roleName}`;
+            
+            // 获取所有权限
+            const permissionsResult = await httpGet(`${API_BASE}/api/permissions/all`);
+            // 获取角色已有的权限
+            const roleResult = await httpGet(`${API_BASE}/api/roles/${roleId}`);
+            
+            if (permissionsResult && permissionsResult.code === 200 && 
+                roleResult && roleResult.code === 200) {
+                
+                allPermissions = permissionsResult.data.list;
+                const selectedIds = roleResult.data.permission_ids || [];
+                
+                renderPermissionTree(allPermissions, selectedIds);
+                $('#permission-modal').modal('show');
+            }
+        }
+        
+        // 构建权限树结构
+        function buildPermissionTree(permissions) {
+            const groupByParent = {};
+            permissions.forEach(p => {
+                const parentId = p.parent_id || 0;
+                if (!groupByParent[parentId]) {
+                    groupByParent[parentId] = [];
+                }
+                groupByParent[parentId].push(p);
+            });
+            return groupByParent;
+        }
+        
+        // 渲染权限树
+        function renderPermissionTree(permissions, selectedIds) {
+            const container = document.getElementById('permission-tree');
+            const groupByParent = buildPermissionTree(permissions);
+            
+            // 获取顶层权限
+            const topPermissions = groupByParent[0] || [];
+            
+            if (topPermissions.length === 0) {
+                container.innerHTML = '<div class="text-center text-muted py-4">暂无权限数据</div>';
+                return;
+            }
+            
+            let html = '';
+            
+            // 递归渲染函数
+            function renderGroup(permission, level = 0) {
+                const children = groupByParent[permission.id] || [];
+                const hasChildren = children.length > 0;
+                const checked = selectedIds.includes(permission.id) ? 'checked' : '';
+                const typeClass = permission.type === 'menu' ? 'badge-primary' : 'badge-secondary';
+                const typeLabel = permission.type === 'menu' ? '菜单' : '按钮';
+                
+                // 检查子权限的选中状态
+                const allChildrenSelected = hasChildren && children.every(c => selectedIds.includes(c.id));
+                const someChildrenSelected = hasChildren && children.some(c => selectedIds.includes(c.id));
+                
+                // 半选状态
+                const indeterminate = someChildrenSelected && !allChildrenSelected;
+                
+                let groupHtml = `
+                    <div class="permission-group" data-id="${permission.id}">
+                        <div class="permission-group-header" onclick="togglePermissionGroup(${permission.id})">
+                            ${hasChildren ? `<i class="fas fa-chevron-down toggle-icon"></i>` : `<span style="width: 26px;"></span>`}
+                            <label class="permission-label" style="cursor: pointer; margin: 0;">
+                                <input type="checkbox" 
+                                       class="permission-checkbox" 
+                                       value="${permission.id}" 
+                                       ${checked}
+                                       onchange="handleParentPermissionChange(${permission.id}, this.checked)"
+                                       data-indeterminate="${indeterminate}">
+                                <span class="badge ${typeClass} permission-badge">${typeLabel}</span>
+                                <span class="permission-name">${permission.name}</span>
+                                <span class="permission-code">${permission.code}</span>
+                            </label>
+                        </div>
+                        ${hasChildren ? `
+                            <div class="permission-children" data-parent-id="${permission.id}">
+                                ${children.map(child => renderChildPermission(child, selectedIds, groupByParent)).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+                
+                return groupHtml;
+            }
+            
+            // 渲染子权限
+            function renderChildPermission(permission, selectedIds, groupByParent, level = 1) {
+                const children = groupByParent[permission.id] || [];
+                const hasChildren = children.length > 0;
+                const checked = selectedIds.includes(permission.id) ? 'checked' : '';
+                const typeClass = permission.type === 'menu' ? 'badge-primary' : 'badge-secondary';
+                const typeLabel = permission.type === 'menu' ? '菜单' : '按钮';
+                
+                // 检查子权限的选中状态
+                const allChildrenSelected = hasChildren && children.every(c => selectedIds.includes(c.id));
+                const someChildrenSelected = hasChildren && children.some(c => selectedIds.includes(c.id));
+                
+                let html = `
+                    <div class="permission-item" data-id="${permission.id}">
+                        ${hasChildren ? `<i class="fas fa-chevron-down toggle-icon" style="margin-right: 10px; cursor: pointer; color: #667eea;" onclick="toggleChildren(${permission.id})"></i>` : ''}
+                        <label class="permission-label">
+                            <input type="checkbox" 
+                                   class="permission-checkbox" 
+                                   value="${permission.id}" 
+                                   ${checked}
+                                   onchange="handleChildPermissionChange(${permission.id}, this.checked)">
+                            <span class="badge ${typeClass} permission-badge">${typeLabel}</span>
+                            <span class="permission-name">${permission.name}</span>
+                            <span class="permission-code">${permission.code}</span>
+                        </label>
+                    </div>
+                `;
+                
+                if (hasChildren) {
+                    html += `<div class="permission-children" data-parent-id="${permission.id}" style="padding-left: 25px;">`;
+                    children.forEach(child => {
+                        html += renderChildPermission(child, selectedIds, groupByParent, level + 1);
+                    });
+                    html += '</div>';
+                }
+                
+                return html;
+            }
+            
+            // 渲染顶层权限
+            topPermissions.forEach(p => {
+                html += renderGroup(p);
+            });
+            
+            container.innerHTML = html;
+            
+            // 设置半选状态
+            const indeterminateInputs = container.querySelectorAll('input[data-indeterminate="true"]');
+            indeterminateInputs.forEach(input => {
+                input.indeterminate = true;
+            });
+            
+            // 更新选中计数
+            updateSelectedCount();
+        }
+        
+        // 切换权限组展开/折叠
+        function togglePermissionGroup(id) {
+            const group = document.querySelector(`.permission-group[data-id="${id}"]`);
+            if (!group) return;
+            
+            const header = group.querySelector('.permission-group-header');
+            const children = group.querySelector('.permission-children');
+            
+            if (children) {
+                header.classList.toggle('collapsed');
+                children.classList.toggle('collapsed');
+            }
+        }
+        
+        // 切换子权限展开/折叠
+        function toggleChildren(id) {
+            const container = document.getElementById('permission-tree');
+            const children = container.querySelector(`.permission-children[data-parent-id="${id}"]`);
+            
+            if (children) {
+                children.classList.toggle('collapsed');
+            }
+        }
+        
+        // 处理父权限变化（全选/取消全选子权限）
+        function handleParentPermissionChange(parentId, checked) {
+            const container = document.getElementById('permission-tree');
+            const group = container.querySelector(`.permission-group[data-id="${parentId}"]`);
+            if (!group) return;
+            
+            // 获取所有子权限的checkbox
+            const children = group.querySelectorAll('.permission-children input[type="checkbox"]');
+            children.forEach(checkbox => {
+                checkbox.checked = checked;
+                checkbox.indeterminate = false;
+            });
+            
+            // 更新父权限的半选状态
+            const parentCheckbox = group.querySelector('.permission-group-header input[type="checkbox"]');
+            if (parentCheckbox) {
+                parentCheckbox.indeterminate = false;
+            }
+            
+            // 更新选中计数
+            updateSelectedCount();
+        }
+        
+        // 处理子权限变化
+        function handleChildPermissionChange(childId, checked) {
+            const container = document.getElementById('permission-tree');
+            
+            // 查找所有祖先节点，更新他们的选中状态
+            updateParentCheckState(container, childId);
+            
+            // 更新选中计数
+            updateSelectedCount();
+        }
+        
+        // 更新父节点的选中状态
+        function updateParentCheckState(container, childId) {
+            // 找到子权限元素
+            const childItem = container.querySelector(`.permission-item[data-id="${childId}"]`) ||
+                             container.querySelector(`.permission-group[data-id="${childId}"]`);
+            if (!childItem) return;
+            
+            // 找到父权限ID
+            let parentId = null;
+            
+            // 检查是否有父级children容器
+            const parentContainer = childItem.closest('.permission-children');
+            if (parentContainer) {
+                parentId = parentContainer.getAttribute('data-parent-id');
+            }
+            
+            // 如果有父级ID，检查所有兄弟的状态
+            if (parentId) {
+                const parentItem = container.querySelector(`.permission-item[data-id="${parentId}"]`) ||
+                                 container.querySelector(`.permission-group[data-id="${parentId}"]`);
+                if (parentItem) {
+                    // 获取父级的checkbox
+                    const parentCheckbox = parentItem.querySelector('input[type="checkbox"]');
+                    
+                    // 获取所有兄弟checkbox
+                    const siblings = parentContainer.querySelectorAll('input[type="checkbox"]');
+                    
+                    const allChecked = Array.from(siblings).every(cb => cb.checked);
+                    const anyChecked = Array.from(siblings).some(cb => cb.checked);
+                    
+                    if (parentCheckbox) {
+                        parentCheckbox.checked = allChecked;
+                        parentCheckbox.indeterminate = anyChecked && !allChecked;
+                    }
+                    
+                    // 递归更新更上层的父节点
+                    updateParentCheckState(container, parseInt(parentId));
+                }
+            }
+        }
+        
+        // 更新选中计数
+        function updateSelectedCount() {
+            const checkboxes = document.querySelectorAll('#permission-tree input[type="checkbox"]:checked');
+            document.getElementById('selected-count').textContent = checkboxes.length;
+        }
+        
+        // 全选所有权限
+        function checkAllPermissions() {
+            const checkboxes = document.querySelectorAll('#permission-tree input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = true;
+                checkbox.indeterminate = false;
+            });
+            updateSelectedCount();
+        }
+        
+        // 取消全选所有权限
+        function uncheckAllPermissions() {
+            const checkboxes = document.querySelectorAll('#permission-tree input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = false;
+                checkbox.indeterminate = false;
+            });
+            updateSelectedCount();
+        }
+        
+        // 展开所有权限组
+        function expandAllPermissions() {
+            const headers = document.querySelectorAll('.permission-group-header');
+            headers.forEach(header => {
+                header.classList.remove('collapsed');
+            });
+            
+            const children = document.querySelectorAll('.permission-children');
+            children.forEach(child => {
+                child.classList.remove('collapsed');
+            });
+        }
+        
+        // 折叠所有权限组
+        function collapseAllPermissions() {
+            const headers = document.querySelectorAll('.permission-group-header');
+            headers.forEach(header => {
+                header.classList.add('collapsed');
+            });
+            
+            const children = document.querySelectorAll('.permission-children');
+            children.forEach(child => {
+                child.classList.add('collapsed');
+            });
+        }
+        
+        // 删除
+        async function deleteItem(id, name) {
+            const confirmed = await showConfirm(`确定要删除角色"${name}"吗？`, '删除确认');
+            if (!confirmed) return;
+            
+            const result = await httpDelete(`${API_BASE}/api/roles/${id}`);
+            
+            if (result && result.code === 200) {
+                showToast('删除成功', 'success');
+                loadData();
+            }
+        }
+    </script>
+</body>
+</html>

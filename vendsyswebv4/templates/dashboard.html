@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>可视化大屏 - 自动售后机数据统计与分析系统</title>
+    
+    <!-- ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    
+    <!-- jQuery -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', 'SimHei', sans-serif;
+            background: linear-gradient(135deg, #0a1628 0%, #1a2a4a 50%, #0a1628 100%);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .dashboard-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 10px;
+        }
+        
+        .dashboard-header {
+            text-align: center;
+            padding: 15px 0;
+            background: linear-gradient(90deg, transparent, rgba(0, 150, 255, 0.2), transparent);
+            border-bottom: 1px solid rgba(0, 150, 255, 0.3);
+            position: relative;
+        }
+        
+        .dashboard-header::before,
+        .dashboard-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            width: 200px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00d4ff, transparent);
+        }
+        
+        .dashboard-header::before {
+            left: 10%;
+        }
+        
+        .dashboard-header::after {
+            right: 10%;
+        }
+        
+        .dashboard-title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            background: linear-gradient(90deg, #00d4ff, #0099ff, #00d4ff);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradient 3s linear infinite;
+        }
+        
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+        
+        .dashboard-subtitle {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 5px;
+        }
+        
+        .dashboard-time {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1rem;
+            color: #00d4ff;
+        }
+        
+        .dashboard-main {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 280px 1fr 280px;
+            grid-template-rows: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .panel {
+            background: rgba(0, 50, 100, 0.15);
+            border: 1px solid rgba(0, 150, 255, 0.3);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 10px;
+            height: 10px;
+            border-top: 2px solid #00d4ff;
+            border-left: 2px solid #00d4ff;
+        }
+        
+        .panel::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 10px;
+            height: 10px;
+            border-bottom: 2px solid #00d4ff;
+            border-right: 2px solid #00d4ff;
+        }
+        
+        .panel-header {
+            padding: 10px 15px;
+            background: linear-gradient(90deg, rgba(0, 150, 255, 0.2), transparent);
+            border-bottom: 1px solid rgba(0, 150, 255, 0.2);
+            font-size: 1rem;
+            font-weight: bold;
+            color: #00d4ff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .panel-header-icon {
+            margin-right: 8px;
+        }
+        
+        .panel-body {
+            padding: 15px;
+            height: calc(100% - 45px);
+        }
+        
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, rgba(0, 100, 200, 0.3), rgba(0, 50, 100, 0.2));
+            border-radius: 6px;
+            padding: 12px;
+            text-align: center;
+            border: 1px solid rgba(0, 150, 255, 0.2);
+        }
+        
+        .stat-card-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #00d4ff;
+        }
+        
+        .stat-card-label {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 5px;
+        }
+        
+        .stat-card.primary .stat-card-value { color: #00d4ff; }
+        .stat-card.success .stat-card-value { color: #00ff88; }
+        .stat-card.warning .stat-card-value { color: #ffcc00; }
+        .stat-card.danger .stat-card-value { color: #ff4444; }
+        
+        .chart-container {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .alert-list {
+            list-style: none;
+        }
+        
+        .alert-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: rgba(0, 50, 100, 0.3);
+            border-radius: 4px;
+            border-left: 3px solid;
+            animation: pulse 2s infinite;
+        }
+        
+        .alert-item.warning { border-left-color: #ffcc00; }
+        .alert-item.danger { border-left-color: #ff4444; }
+        .alert-item.info { border-left-color: #00d4ff; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        
+        .alert-icon {
+            font-size: 1.2rem;
+            margin-right: 10px;
+        }
+        
+        .alert-warning .alert-icon { color: #ffcc00; }
+        .alert-danger .alert-icon { color: #ff4444; }
+        .alert-info .alert-icon { color: #00d4ff; }
+        
+        .alert-content {
+            flex: 1;
+        }
+        
+        .alert-title {
+            font-size: 0.85rem;
+            color: #fff;
+        }
+        
+        .alert-time {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 3px;
+        }
+        
+        .ranking-list {
+            list-style: none;
+        }
+        
+        .ranking-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(0, 150, 255, 0.1);
+        }
+        
+        .ranking-item:last-child {
+            border-bottom: none;
+        }
+        
+        .ranking-rank {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .ranking-rank.gold {
+            background: linear-gradient(135deg, #ffd700, #ffaa00);
+            color: #000;
+        }
+        
+        .ranking-rank.silver {
+            background: linear-gradient(135deg, #c0c0c0, #a0a0a0);
+            color: #000;
+        }
+        
+        .ranking-rank.bronze {
+            background: linear-gradient(135deg, #cd7f32, #b87333);
+            color: #fff;
+        }
+        
+        .ranking-rank.normal {
+            background: rgba(0, 150, 255, 0.2);
+            color: #00d4ff;
+        }
+        
+        .ranking-info {
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .ranking-name {
+            font-size: 0.85rem;
+            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .ranking-value {
+            font-size: 0.85rem;
+            color: #00d4ff;
+            font-weight: bold;
+        }
+        
+        .center-panel {
+            grid-column: 2;
+            grid-row: 1 / span 2;
+        }
+        
+        .main-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .main-stat {
+            background: linear-gradient(135deg, rgba(0, 100, 200, 0.4), rgba(0, 50, 100, 0.2));
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            border: 1px solid rgba(0, 150, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .main-stat::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            animation: shine 3s infinite;
+        }
+        
+        @keyframes shine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        .main-stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        
+        .main-stat-label {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 5px;
+        }
+        
+        .main-stat.primary .main-stat-value { color: #00d4ff; }
+        .main-stat.success .main-stat-value { color: #00ff88; }
+        .main-stat.warning .main-stat-value { color: #ffcc00; }
+        .main-stat.info .main-stat-value { color: #ff88ff; }
+        
+        .nav-back {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        .nav-back a {
+            color: #00d4ff;
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
+        }
+        
+        .nav-back a:hover {
+            color: #fff;
+        }
+        
+        .nav-back i {
+            margin-right: 5px;
+        }
+        
+        @media (max-width: 1400px) {
+            .dashboard-main {
+                grid-template-columns: 250px 1fr 250px;
+            }
+        }
+        
+        .number-scroll {
+            display: inline-block;
+            overflow: hidden;
+        }
+        
+        .trend-up {
+            color: #00ff88;
+            font-size: 0.7rem;
+        }
+        
+        .trend-down {
+            color: #ff4444;
+            font-size: 0.7rem;
+        }
+        
+        .map-container {
+            width: 100%;
+            height: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 50, 100, 0.2);
+            border-radius: 4px;
+            position: relative;
+        }
+        
+        .map-placeholder {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.4);
+        }
+        
+        .map-placeholder i {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+        
+        .device-dots {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .device-dot {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: dot-pulse 2s infinite;
+        }
+        
+        .device-dot.online {
+            background: #00ff88;
+            box-shadow: 0 0 10px #00ff88;
+        }
+        
+        .device-dot.offline {
+            background: #ff4444;
+            box-shadow: 0 0 10px #ff4444;
+        }
+        
+        @keyframes dot-pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="dashboard-header">
+            <div class="nav-back">
+                <a href="/sales">
+                    <i class="fa fa-arrow-left"></i>
+                    返回系统
+                </a>
+            </div>
+            <h1 class="dashboard-title">自动售后机运营数据大屏</h1>
+            <p class="dashboard-subtitle">实时监控 · 智能分析 · 数据驱动决策</p>
+            <div class="dashboard-time" id="dashboardTime">
+                <span id="currentDate"></span>
+                <span id="currentTime"></span>
+            </div>
+        </header>
+        
+        <main class="dashboard-main">
+            <div class="panel" id="salesPanel">
+                <div class="panel-header">
+                    <span><i class="fa fa-line-chart panel-header-icon"></i>销售趋势</span>
+                    <span class="trend-up"><i class="fa fa-arrow-up"></i> +12.5%</span>
+                </div>
+                <div class="panel-body">
+                    <div class="chart-container" id="salesTrendChart"></div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <div class="panel-header">
+                    <span><i class="fa fa-map-marker panel-header-icon"></i>设备分布</span>
+                </div>
+                <div class="panel-body">
+                    <div class="map-container">
+                        <div class="device-dots" id="deviceDots"></div>
+                        <div class="map-placeholder">
+                            <i class="fa fa-map"></i>
+                            <p>设备分布示意</p>
+                        </div>
+                    </div>
+                    <div class="stats-cards" style="margin-top: 15px;">
+                        <div class="stat-card success">
+                            <div class="stat-card-value" id="onlineCount">0</div>
+                            <div class="stat-card-label">在线设备</div>
+                        </div>
+                        <div class="stat-card danger">
+                            <div class="stat-card-value" id="offlineCount">0</div>
+                            <div class="stat-card-label">离线设备</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel center-panel">
+                <div class="panel-header">
+                    <span><i class="fa fa-dashboard panel-header-icon"></i>核心指标</span>
+                </div>
+                <div class="panel-body">
+                    <div class="main-stats">
+                        <div class="main-stat primary">
+                            <div class="main-stat-value number-scroll" id="todaySales">¥0</div>
+                            <div class="main-stat-label">今日销售额</div>
+                        </div>
+                        <div class="main-stat success">
+                            <div class="main-stat-value number-scroll" id="todayOrders">0</div>
+                            <div class="main-stat-label">今日订单数</div>
+                        </div>
+                        <div class="main-stat warning">
+                            <div class="main-stat-value number-scroll" id="monthSales">¥0</div>
+                            <div class="main-stat-label">本月销售额</div>
+                        </div>
+                        <div class="main-stat info">
+                            <div class="main-stat-value number-scroll" id="yearSales">¥0</div>
+                            <div class="main-stat-label">本年销售额</div>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; height: calc(100% - 140px);">
+                        <div class="chart-container" id="realtimeChart"></div>
+                        <div class="chart-container" id="paymentChart"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <div class="panel-header">
+                    <span><i class="fa fa-trophy panel-header-icon"></i>热销商品 TOP10</span>
+                </div>
+                <div class="panel-body">
+                    <ul class="ranking-list" id="hotProductsList">
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <div class="panel-header">
+                    <span><i class="fa fa-exclamation-triangle panel-header-icon"></i>实时预警</span>
+                </div>
+                <div class="panel-body">
+                    <ul class="alert-list" id="alertList">
+                    </ul>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script>
+        const API_BASE = '/api/v1';
+        
+        function formatNumber(num) {
+            if (num === null || num === undefined) return '0';
+            return num.toLocaleString('zh-CN');
+        }
+        
+        function formatCurrency(num) {
+            if (num === null || num === undefined) return '¥0';
+            return '¥' + (num >= 10000 ? (num / 10000).toFixed(1) + '万' : num.toFixed(0));
+        }
+        
+        async function apiGet(url, params = {}) {
+            const queryString = new URLSearchParams(params).toString();
+            const fullUrl = queryString ? `${API_BASE}${url}?${queryString}` : `${API_BASE}${url}`;
+            
+            try {
+                const response = await fetch(fullUrl);
+                const data = await response.json();
+                if (data.code === 200) {
+                    return data.data;
+                }
+                return null;
+            } catch (error) {
+                console.error('API请求失败:', error);
+                return null;
+            }
+        }
+        
+        function updateTime() {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('zh-CN', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                weekday: 'long'
+            });
+            const timeStr = now.toLocaleTimeString('zh-CN', {
+                hour12: false,
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            
+            document.getElementById('currentDate').textContent = dateStr;
+            document.getElementById('currentTime').textContent = timeStr;
+        }
+        
+        function animateNumber(element, targetValue, prefix = '', suffix = '') {
+            const duration = 1000;
+            const start = 0;
+            const startTime = performance.now();
+            
+            function update(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easeProgress = 1 - Math.pow(1 - progress, 3);
+                const currentValue = Math.floor(start + (targetValue - start) * easeProgress);
+                
+                element.textContent = prefix + formatNumber(currentValue) + suffix;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                }
+            }
+            
+            requestAnimationFrame(update);
+        }
+        
+        function initSalesTrendChart() {
+            const chart = echarts.init(document.getElementById('salesTrendChart'));
+            
+            const option = {
+                tooltip: {
+                    trigger: 'axis',
+                    backgroundColor: 'rgba(0, 30, 60, 0.9)',
+                    borderColor: '#00d4ff',
+                    textStyle: { color: '#fff' }
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    top: '10%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    boundaryGap: false,
+                    data: ['00', '04', '08', '12', '16', '20', '24'],
+                    axisLine: { lineStyle: { color: 'rgba(0, 150, 255, 0.3)' } },
+                    axisLabel: { color: 'rgba(255, 255, 255, 0.6)' }
+                },
+                yAxis: {
+                    type: 'value',
+                    axisLine: { show: false },
+                    splitLine: { lineStyle: { color: 'rgba(0, 150, 255, 0.1)' } },
+                    axisLabel: { color: 'rgba(255, 255, 255, 0.6)' }
+                },
+                series: [{
+                    name: '销售额',
+                    type: 'line',
+                    smooth: true,
+                    symbol: 'circle',
+                    symbolSize: 6,
+                    lineStyle: {
+                        color: '#00d4ff',
+                        width: 2
+                    },
+                    itemStyle: {
+                        color: '#00d4ff'
+                    },
+                    areaStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: 'rgba(0, 212, 255, 0.3)' },
+                            { offset: 1, color: 'rgba(0, 212, 255, 0.05)' }
+                        ])
+                    },
+                    data: [1200, 800, 2500, 4200, 3800, 5200, 3600]
+                }]
+            };
+            
+            chart.setOption(option);
+            return chart;
+        }
+        
+        function initRealtimeChart() {
+            const chart = echarts.init(document.getElementById('realtimeChart'));
+            
+            const option = {
+                title: {
+                    text: '今日实时销售',
+                    textStyle: {
+                        color: '#00d4ff',
+                        fontSize: 12
+                    },
+                    left: 'center'
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    backgroundColor: 'rgba(0, 30, 60, 0.9)',
+                    borderColor: '#00d4ff',
+                    textStyle: { color: '#fff' }
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    top: '20%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    boundaryGap: false,
+                    data: ['08', '10', '12', '14', '16', '18', '20'],
+                    axisLine: { lineStyle: { color: 'rgba(0, 150, 255, 0.3)' } },
+                    axisLabel: { color: 'rgba(255, 255, 255, 0.6)', fontSize: 10 }
+                },
+                yAxis: {
+                    type: 'value',
+                    axisLine: { show: false },
+                    splitLine: { lineStyle: { color: 'rgba(0, 150, 255, 0.1)' } },
+                    axisLabel: { color: 'rgba(255, 255, 255, 0.6)', fontSize: 10 }
+                },
+                series: [{
+                    name: '订单数',
+                    type: 'line',
+                    smooth: true,
+                    symbol: 'none',
+                    lineStyle: {
+                        color: '#00ff88',
+                        width: 2
+                    },
+                    areaStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: 'rgba(0, 255, 136, 0.3)' },
+                            { offset: 1, color: 'rgba(0, 255, 136, 0.05)' }
+                        ])
+                    },
+                    data: [120, 280, 420, 380, 520, 680, 450]
+                }]
+            };
+            
+            chart.setOption(option);
+            return chart;
+        }
+        
+        function initPaymentChart() {
+            const chart = echarts.init(document.getElementById('paymentChart'));
+            
+            const option = {
+                title: {
+                    text: '支付方式分布',
+                    textStyle: {
+                        color: '#00d4ff',
+                        fontSize: 12
+                    },
+                    left: 'center'
+                },
+                tooltip: {
+                    trigger: 'item',
+                    backgroundColor: 'rgba(0, 30, 60, 0.9)',
+                    borderColor: '#00d4ff',
+                    textStyle: { color: '#fff' }
+                },
+                legend: {
+                    orient: 'vertical',
+                    right: '5%',
+                    top: 'center',
+                    textStyle: {
+                        color: 'rgba(255, 255, 255, 0.7)',
+                        fontSize: 10
+                    }
+                },
+                series: [{
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    center: ['35%', '55%'],
+                    avoidLabelOverlap: false,
+                    itemStyle: {
+                        borderRadius: 5,
+                        borderColor: 'rgba(0, 30, 60, 0.8)',
+                        borderWidth: 2
+                    },
+                    label: { show: false },
+                    emphasis: {
+                        label: {
+                            show: true,
+                            fontSize: 12,
+                            fontWeight: 'bold',
+                            color: '#fff'
+                        }
+                    },
+                    labelLine: { show: false },
+                    data: [
+                        { value: 45, name: '微信支付', itemStyle: { color: '#00ff88' } },
+                        { value: 35, name: '支付宝', itemStyle: { color: '#00d4ff' } },
+                        { value: 15, name: '现金', itemStyle: { color: '#ffcc00' } },
+                        { value: 5, name: '其他', itemStyle: { color: '#ff88ff' } }
+                    ]
+                }]
+            };
+            
+            chart.setOption(option);
+            return chart;
+        }
+        
+        function generateDeviceDots() {
+            const container = document.getElementById('deviceDots');
+            const dotCount = 15;
+            
+            for (let i = 0; i < dotCount; i++) {
+                const dot = document.createElement('div');
+                dot.className = `device-dot ${Math.random() > 0.2 ? 'online' : 'offline'}`;
+                dot.style.left = `${10 + Math.random() * 80}%`;
+                dot.style.top = `${10 + Math.random() * 80}%`;
+                dot.style.animationDelay = `${Math.random() * 2}s`;
+                container.appendChild(dot);
+            }
+        }
+        
+        function renderHotProducts(products) {
+            const list = document.getElementById('hotProductsList');
+            list.innerHTML = '';
+            
+            if (!products || products.length === 0) {
+                products = [
+                    { product_name: '可口可乐', total_sales: 15800, total_quantity: 520 },
+                    { product_name: '百事可乐', total_sales: 14200, total_quantity: 480 },
+                    { product_name: '农夫山泉', total_sales: 12500, total_quantity: 850 },
+                    { product_name: '康师傅泡面', total_sales: 10800, total_quantity: 360 },
+                    { product_name: '乐事薯片', total_sales: 8900, total_quantity: 420 },
+                    { product_name: '旺仔牛奶', total_sales: 7800, total_quantity: 310 },
+                    { product_name: '奥利奥', total_sales: 6500, total_quantity: 280 },
+                    { product_name: '德芙巧克力', total_sales: 5800, total_quantity: 190 }
+                ];
+            }
+            
+            products.slice(0, 8).forEach((item, index) => {
+                const rank = index + 1;
+                let rankClass = 'normal';
+                if (rank === 1) rankClass = 'gold';
+                else if (rank === 2) rankClass = 'silver';
+                else if (rank === 3) rankClass = 'bronze';
+                
+                const li = document.createElement('li');
+                li.className = 'ranking-item';
+                li.innerHTML = `
+                    <div class="ranking-rank ${rankClass}">${rank}</div>
+                    <div class="ranking-info">
+                        <div class="ranking-name">${item.product_name}</div>
+                    </div>
+                    <div class="ranking-value">${formatCurrency(item.total_sales || 0)}</div>
+                `;
+                list.appendChild(li);
+            });
+        }
+        
+        function renderAlerts(alerts) {
+            const list = document.getElementById('alertList');
+            list.innerHTML = '';
+            
+            if (!alerts || alerts.length === 0) {
+                alerts = [
+                    { type: 'danger', title: '设备 A001 离线超过30分钟', time: '10分钟前' },
+                    { type: 'warning', title: '设备 B003 库存不足 (可口可乐)', time: '25分钟前' },
+                    { type: 'info', title: '今日销售额已突破10万', time: '1小时前' },
+                    { type: 'warning', title: '设备 C002 需要保养维护', time: '2小时前' }
+                ];
+            }
+            
+            alerts.slice(0, 5).forEach(item => {
+                const li = document.createElement('li');
+                li.className = `alert-item alert-${item.type}`;
+                
+                let icon = 'info-circle';
+                if (item.type === 'warning') icon = 'exclamation-triangle';
+                else if (item.type === 'danger') icon = 'exclamation-circle';
+                
+                li.innerHTML = `
+                    <i class="fa fa-${icon} alert-icon"></i>
+                    <div class="alert-content">
+                        <div class="alert-title">${item.title}</div>
+                        <div class="alert-time">${item.time}</div>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+        }
+        
+        async function loadDashboardData() {
+            const overview = await apiGet('/dashboard/overview');
+            
+            if (overview) {
+                const todayEl = document.getElementById('todaySales');
+                const monthEl = document.getElementById('monthSales');
+                const yearEl = document.getElementById('yearSales');
+                const ordersEl = document.getElementById('todayOrders');
+                
+                todayEl.textContent = formatCurrency(overview.today_sales || 0);
+                monthEl.textContent = formatCurrency(overview.month_sales || 0);
+                yearEl.textContent = formatCurrency(overview.year_sales || 0);
+                ordersEl.textContent = formatNumber(overview.today_orders || 0);
+                
+                document.getElementById('onlineCount').textContent = formatNumber(overview.online_devices || 0);
+                document.getElementById('offlineCount').textContent = formatNumber(overview.offline_devices || 0);
+            }
+            
+            const topProducts = await apiGet('/dashboard/top-products', { limit: 10 });
+            renderHotProducts(topProducts);
+            
+            const alerts = await apiGet('/dashboard/alerts');
+            renderAlerts(alerts);
+        }
+        
+        $(document).ready(function() {
+            updateTime();
+            setInterval(updateTime, 1000);
+            
+            const salesChart = initSalesTrendChart();
+            const realtimeChart = initRealtimeChart();
+            const paymentChart = initPaymentChart();
+            
+            generateDeviceDots();
+            
+            loadDashboardData();
+            
+            setInterval(loadDashboardData, 30000);
+            
+            $(window).on('resize', function() {
+                salesChart.resize();
+                realtimeChart.resize();
+                paymentChart.resize();
+            });
+        });
+    </script>
+</body>
+</html>

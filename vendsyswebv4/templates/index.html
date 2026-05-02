@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>销售报表 - 自动售后机数据统计与分析系统</title>
+    
+    <!-- Bootstrap 4 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- jQuery -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    
+    <!-- Bootstrap 4 JS Bundle (includes Popper) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- 自定义样式 -->
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #858796;
+            --success-color: #1cc88a;
+            --info-color: #36b9cc;
+            --warning-color: #f6c23e;
+            --danger-color: #e74a3b;
+            --dark-color: #5a5c69;
+            --light-color: #f8f9fc;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fc;
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+        
+        .navbar-dark.bg-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        }
+        
+        .sidebar {
+            position: fixed;
+            top: 56px;
+            left: 0;
+            width: 250px;
+            height: calc(100vh - 56px);
+            background: linear-gradient(180deg, #4e73df 0%, #224abe 100%);
+            color: white;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        
+        .sidebar.collapsed {
+            width: 70px;
+        }
+        
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .sidebar-menu li a {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar-menu li a:hover,
+        .sidebar-menu li a.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .sidebar-menu li a i {
+            width: 30px;
+            text-align: center;
+            font-size: 1.2rem;
+        }
+        
+        .sidebar-menu li a span {
+            margin-left: 10px;
+            white-space: nowrap;
+        }
+        
+        .sidebar.collapsed .sidebar-menu li a span {
+            display: none;
+        }
+        
+        .sidebar.collapsed .sidebar-menu li a {
+            justify-content: center;
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            padding-top: 56px;
+            min-height: 100vh;
+            transition: all 0.3s ease;
+        }
+        
+        .main-content.expanded {
+            margin-left: 70px;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 0.35rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            margin-bottom: 1.5rem;
+        }
+        
+        .card-header {
+            background-color: #f8f9fc;
+            border-bottom: 1px solid #e3e6f0;
+            padding: 0.75rem 1.25rem;
+        }
+        
+        .card-header h6 {
+            margin: 0;
+            font-weight: 700;
+            color: #4e73df;
+        }
+        
+        .stats-card {
+            border-left: 0.25rem solid;
+            padding: 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .stats-card.primary {
+            border-left-color: #4e73df;
+        }
+        
+        .stats-card.success {
+            border-left-color: #1cc88a;
+        }
+        
+        .stats-card.info {
+            border-left-color: #36b9cc;
+        }
+        
+        .stats-card.warning {
+            border-left-color: #f6c23e;
+        }
+        
+        .stats-card .stats-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0;
+        }
+        
+        .stats-card .stats-label {
+            color: #858796;
+            font-size: 0.85rem;
+            margin: 0;
+        }
+        
+        .stats-card .stats-icon {
+            font-size: 2rem;
+            color: #dddfeb;
+        }
+        
+        .table-responsive {
+            border-radius: 0.35rem;
+        }
+        
+        .table thead th {
+            background-color: #f8f9fc;
+            border-bottom: 2px solid #e3e6f0;
+            font-weight: 600;
+            color: #5a5c69;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+        }
+        
+        .badge {
+            padding: 0.4em 0.6em;
+            font-weight: 500;
+        }
+        
+        .badge-success {
+            background-color: #1cc88a;
+        }
+        
+        .badge-warning {
+            background-color: #f6c23e;
+        }
+        
+        .badge-info {
+            background-color: #36b9cc;
+        }
+        
+        .date-range {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .date-range input {
+            max-width: 150px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        
+        .chart-container-large {
+            height: 400px;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .loading.active {
+            display: block;
+        }
+        
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+            color: #4e73df;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #858796;
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .date-range {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .date-range input {
+                max-width: none;
+            }
+        }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+        
+        .page-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #5a5c69;
+            margin-bottom: 1.5rem;
+        }
+        
+        .breadcrumb {
+            background-color: transparent;
+            padding: 0;
+            margin-bottom: 1rem;
+        }
+        
+        .breadcrumb-item a {
+            color: #4e73df;
+        }
+        
+        .breadcrumb-item.active {
+            color: #858796;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+        <a class="navbar-brand" href="/">
+            <i class="fa fa-cubes mr-2"></i>
+            自动售后机数据分析
+        </a>
+        
+        <button class="navbar-toggler" type="button" id="sidebarToggleMobile">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse justify-content-end">
+            <ul class="navbar-nav">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="notificationsDropdown" role="button" data-toggle="dropdown">
+                        <i class="fa fa-bell-o"></i>
+                        <span class="badge badge-danger">3</span>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right">
+                        <a class="dropdown-item" href="#">
+                            <i class="fa fa-exclamation-triangle text-warning mr-2"></i>
+                            设备A001离线
+                        </a>
+                        <a class="dropdown-item" href="#">
+                            <i class="fa fa-exclamation-circle text-danger mr-2"></i>
+                            库存不足预警
+                        </a>
+                        <a class="dropdown-item" href="#">
+                            <i class="fa fa-info-circle text-info mr-2"></i>
+                            系统更新通知
+                        </a>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">
+                        <i class="fa fa-user-circle-o"></i>
+                        管理员
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    
+    <aside class="sidebar" id="sidebar">
+        <ul class="sidebar-menu">
+            <li>
+                <a href="/sales" class="active">
+                    <i class="fa fa-line-chart"></i>
+                    <span>销售报表</span>
+                </a>
+            </li>
+            <li>
+                <a href="/products">
+                    <i class="fa fa-shopping-bag"></i>
+                    <span>商品分析</span>
+                </a>
+            </li>
+            <li>
+                <a href="/devices">
+                    <i class="fa fa-cogs"></i>
+                    <span>设备效能</span>
+                </a>
+            </li>
+            <li>
+                <a href="/users">
+                    <i class="fa fa-users"></i>
+                    <span>用户行为</span>
+                </a>
+            </li>
+            <li>
+                <a href="/dashboard">
+                    <i class="fa fa-tv"></i>
+                    <span>可视化大屏</span>
+                </a>
+            </li>
+        </ul>
+    </aside>
+    
+    <main class="main-content p-4" id="mainContent">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/">首页</a></li>
+                <li class="breadcrumb-item active">销售报表</li>
+            </ol>
+        </nav>
+        
+        <h2 class="page-title">
+            <i class="fa fa-line-chart text-primary mr-2"></i>
+            销售报表
+        </h2>
+        
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6><i class="fa fa-filter mr-2"></i>查询条件</h6>
+            </div>
+            <div class="card-body">
+                <div class="form-row align-items-end">
+                    <div class="form-group col-md-3">
+                        <label>时间维度</label>
+                        <select id="timeDimension" class="form-control">
+                            <option value="daily">按日统计</option>
+                            <option value="weekly">按周统计</option>
+                            <option value="monthly">按月统计</option>
+                            <option value="yearly">按年统计</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label>开始日期</label>
+                        <input type="date" id="startDate" class="form-control">
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label>结束日期</label>
+                        <input type="date" id="endDate" class="form-control">
+                    </div>
+                    <div class="form-group col-md-3">
+                        <button id="btnQuery" class="btn btn-primary btn-block">
+                            <i class="fa fa-search mr-1"></i>查询
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stats-card primary">
+                    <div>
+                        <p class="stats-value" id="totalSales">¥0.00</p>
+                        <p class="stats-label">总销售额</p>
+                    </div>
+                    <div>
+                        <i class="fa fa-money stats-icon"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stats-card success">
+                    <div>
+                        <p class="stats-value" id="totalOrders">0</p>
+                        <p class="stats-label">订单总数</p>
+                    </div>
+                    <div>
+                        <i class="fa fa-shopping-cart stats-icon"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stats-card info">
+                    <div>
+                        <p class="stats-value" id="avgOrderValue">¥0.00</p>
+                        <p class="stats-label">客单价</p>
+                    </div>
+                    <div>
+                        <i class="fa fa-calculator stats-icon"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stats-card warning">
+                    <div>
+                        <p class="stats-value" id="avgDailySales">¥0.00</p>
+                        <p class="stats-label">日均销售额</p>
+                    </div>
+                    <div>
+                        <i class="fa fa-calendar stats-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fa fa-area-chart mr-2"></i>销售趋势</h6>
+            </div>
+            <div class="card-body">
+                <div id="salesChartContainer">
+                    <div class="chart-container">
+                        <canvas id="salesTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6><i class="fa fa-credit-card mr-2"></i>支付方式分布</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="paymentChartContainer">
+                            <div class="chart-container">
+                                <canvas id="paymentChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6><i class="fa fa-trophy mr-2"></i>热销设备排行 (Top 10)</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="topDevicesTable">
+                                <thead>
+                                    <tr>
+                                        <th>排名</th>
+                                        <th>设备编号</th>
+                                        <th>设备名称</th>
+                                        <th>销售额</th>
+                                        <th>订单数</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6><i class="fa fa-list mr-2"></i>销售明细</h6>
+                <div>
+                    <button id="btnRefresh" class="btn btn-outline-primary btn-sm">
+                        <i class="fa fa-refresh mr-1"></i>刷新
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="salesTable">
+                        <thead>
+                            <tr>
+                                <th>订单编号</th>
+                                <th>设备</th>
+                                <th>用户</th>
+                                <th>订单金额</th>
+                                <th>支付方式</th>
+                                <th>状态</th>
+                                <th>下单时间</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+                <nav>
+                    <ul class="pagination justify-content-center" id="pagination">
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </main>
+    
+    <script>
+        const API_BASE = '/api/v1';
+        let salesTrendChart = null;
+        let paymentChart = null;
+        let currentPage = 1;
+        const pageSize = 10;
+        
+        function getToday() {
+            return new Date().toISOString().split('T')[0];
+        }
+        
+        function getDaysAgo(days) {
+            const date = new Date();
+            date.setDate(date.getDate() - days);
+            return date.toISOString().split('T')[0];
+        }
+        
+        function formatNumber(num) {
+            if (num === null || num === undefined) return '0';
+            return num.toLocaleString('zh-CN');
+        }
+        
+        function formatCurrency(num) {
+            if (num === null || num === undefined) return '¥0.00';
+            return '¥' + num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+        
+        function formatPercent(num) {
+            if (num === null || num === undefined) return '0.00%';
+            return num.toFixed(2) + '%';
+        }
+        
+        async function apiGet(url, params = {}) {
+            const queryString = new URLSearchParams(params).toString();
+            const fullUrl = queryString ? `${API_BASE}${url}?${queryString}` : `${API_BASE}${url}`;
+            
+            try {
+                const response = await fetch(fullUrl);
+                const data = await response.json();
+                if (data.code === 200) {
+                    return data.data;
+                } else {
+                    throw new Error(data.message || '请求失败');
+                }
+            } catch (error) {
+                console.error('API请求失败:', error);
+                throw error;
+            }
+        }
+        
+        function showLoading(selector) {
+            $(selector).html(`
+                <div class="loading active">
+                    <div class="spinner-border" role="status">
+                        <span class="sr-only">加载中...</span>
+                    </div>
+                    <p class="mt-3">数据加载中...</p>
+                </div>
+            `);
+        }
+        
+        function showEmpty(selector, message) {
+            $(selector).html(`
+                <div class="empty-state">
+                    <i class="fa fa-database"></i>
+                    <p>${message || '暂无数据'}</p>
+                </div>
+            `);
+        }
+        
+        function showError(selector, message) {
+            $(selector).html(`
+                <div class="alert alert-danger" role="alert">
+                    <i class="fa fa-exclamation-circle mr-2"></i>
+                    ${message || '加载失败，请稍后重试'}
+                </div>
+            `);
+        }
+        
+        $('#sidebarToggleMobile').on('click', function() {
+            $('#sidebar').toggleClass('show');
+        });
+        
+        $(document).ready(function() {
+            $('#startDate').val(getDaysAgo(30));
+            $('#endDate').val(getToday());
+            
+            loadSalesSummary();
+            loadSalesTrend();
+            loadPaymentDistribution();
+            loadTopDevices();
+            loadSalesList();
+        });
+        
+        $('#btnQuery').on('click', function() {
+            loadSalesSummary();
+            loadSalesTrend();
+            loadPaymentDistribution();
+            loadTopDevices();
+            loadSalesList();
+        });
+        
+        $('#btnRefresh').on('click', function() {
+            loadSalesList();
+        });
+        
+        $('#timeDimension').on('change', function() {
+            loadSalesTrend();
+        });
+        
+        async function loadSalesSummary() {
+            try {
+                const data = await apiGet('/sales/summary', {
+                    start_date: $('#startDate').val(),
+                    end_date: $('#endDate').val()
+                });
+                
+                $('#totalSales').text(formatCurrency(data.total_sales));
+                $('#totalOrders').text(formatNumber(data.total_orders));
+                $('#avgOrderValue').text(formatCurrency(data.avg_order_value));
+                
+                const daysDiff = Math.ceil((new Date($('#endDate').val()) - new Date($('#startDate').val())) / (1000 * 60 * 60 * 24)) + 1;
+                const avgDaily = daysDiff > 0 ? data.total_sales / daysDiff : 0;
+                $('#avgDailySales').text(formatCurrency(avgDaily));
+            } catch (error) {
+                console.error('加载销售汇总失败:', error);
+            }
+        }
+        
+        async function loadSalesTrend() {
+            try {
+                const dimension = $('#timeDimension').val();
+                let endpoint = '';
+                let labelText = '';
+                
+                switch(dimension) {
+                    case 'weekly':
+                        endpoint = '/sales/weekly';
+                        labelText = '周';
+                        break;
+                    case 'monthly':
+                        endpoint = '/sales/monthly';
+                        labelText = '月';
+                        break;
+                    case 'yearly':
+                        endpoint = '/sales/yearly';
+                        labelText = '年';
+                        break;
+                    default:
+                        endpoint = '/sales/daily';
+                        labelText = '日';
+                }
+                
+                const data = await apiGet(endpoint, {
+                    start_date: $('#startDate').val(),
+                    end_date: $('#endDate').val(),
+                    limit: 30
+                });
+                
+                if (!data || data.length === 0) {
+                    showEmpty('#salesChartContainer', '暂无销售趋势数据');
+                    return;
+                }
+                
+                const labels = data.map(item => {
+                    if (dimension === 'daily') {
+                        return item.date;
+                    } else if (dimension === 'weekly') {
+                        return `${item.year}年第${item.week}周`;
+                    } else if (dimension === 'monthly') {
+                        return `${item.year}年${item.month}月`;
+                    } else {
+                        return `${item.year}年`;
+                    }
+                });
+                
+                const salesData = data.map(item => item.total_sales);
+                const orderData = data.map(item => item.order_count);
+                
+                const ctx = document.getElementById('salesTrendChart').getContext('2d');
+                
+                if (salesTrendChart) {
+                    salesTrendChart.destroy();
+                }
+                
+                salesTrendChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: '销售额',
+                                data: salesData,
+                                borderColor: '#4e73df',
+                                backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                                borderWidth: 2,
+                                fill: true,
+                                tension: 0.4,
+                                yAxisID: 'y'
+                            },
+                            {
+                                label: '订单数',
+                                data: orderData,
+                                borderColor: '#1cc88a',
+                                backgroundColor: 'rgba(28, 200, 138, 0.1)',
+                                borderWidth: 2,
+                                fill: false,
+                                tension: 0.4,
+                                yAxisID: 'y1'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        },
+                        scales: {
+                            x: {
+                            },
+                            y: {
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                                title: {
+                                    display: true,
+                                    text: '销售额 (元)'
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        return '¥' + value.toLocaleString();
+                                    }
+                                }
+                            },
+                            y1: {
+                                type: 'linear',
+                                display: true,
+                                position: 'right',
+                                title: {
+                                    display: true,
+                                    text: '订单数'
+                                },
+                                grid: {
+                                    drawOnChartArea: false
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'top'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            if (context.datasetIndex === 0) {
+                                                label += formatCurrency(context.parsed.y);
+                                            } else {
+                                                label += formatNumber(context.parsed.y) + ' 单';
+                                            }
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('加载销售趋势失败:', error);
+                showError('#salesChartContainer', '加载销售趋势失败');
+            }
+        }
+        
+        async function loadPaymentDistribution() {
+            try {
+                const data = await apiGet('/sales/payment-methods', {
+                    start_date: $('#startDate').val(),
+                    end_date: $('#endDate').val()
+                });
+                
+                if (!data || data.length === 0) {
+                    showEmpty('#paymentChartContainer', '暂无支付方式数据');
+                    return;
+                }
+                
+                const labels = data.map(item => item.payment_method_name || '其他');
+                const salesData = data.map(item => item.total_sales);
+                const orderData = data.map(item => item.order_count);
+                
+                const ctx = document.getElementById('paymentChart').getContext('2d');
+                
+                if (paymentChart) {
+                    paymentChart.destroy();
+                }
+                
+                const colors = [
+                    '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796'
+                ];
+                
+                paymentChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: salesData,
+                            backgroundColor: colors.slice(0, labels.length),
+                            borderWidth: 2,
+                            borderColor: '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.parsed || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = total > 0 ? (value / total * 100) : 0;
+                                        return `${label}: ${formatCurrency(value)} (${formatPercent(percentage)})`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('加载支付方式分布失败:', error);
+                showError('#paymentChartContainer', '加载支付方式分布失败');
+            }
+        }
+        
+        async function loadTopDevices() {
+            try {
+                const data = await apiGet('/sales/by-device', {
+                    start_date: $('#startDate').val(),
+                    end_date: $('#endDate').val(),
+                    limit: 10
+                });
+                
+                const tbody = $('#topDevicesTable tbody');
+                tbody.empty();
+                
+                if (!data || data.length === 0) {
+                    tbody.append('<tr><td colspan="5" class="text-center text-muted">暂无数据</td></tr>');
+                    return;
+                }
+                
+                data.forEach((item, index) => {
+                    const rank = index + 1;
+                    const rankBadge = rank <= 3 
+                        ? `<span class="badge badge-${rank === 1 ? 'warning' : rank === 2 ? 'secondary' : 'info'}">${rank}</span>`
+                        : `<span class="badge badge-light">${rank}</span>`;
+                    
+                    tbody.append(`
+                        <tr>
+                            <td>${rankBadge}</td>
+                            <td><strong>${item.device_code || '-'}</strong></td>
+                            <td>${item.device_name || '-'}</td>
+                            <td class="text-success font-weight-bold">${formatCurrency(item.total_sales)}</td>
+                            <td>${formatNumber(item.order_count)} 单</td>
+                        </tr>
+                    `);
+                });
+            } catch (error) {
+                console.error('加载热销设备排行失败:', error);
+            }
+        }
+        
+        async function loadSalesList() {
+            try {
+                const data = await apiGet('/sales/list', {
+                    start_date: $('#startDate').val(),
+                    end_date: $('#endDate').val(),
+                    page: currentPage,
+                    page_size: pageSize
+                });
+                
+                const tbody = $('#salesTable tbody');
+                tbody.empty();
+                
+                if (!data || !data.items || data.items.length === 0) {
+                    tbody.append('<tr><td colspan="7" class="text-center text-muted">暂无订单数据</td></tr>');
+                    return;
+                }
+                
+                const statusMap = {
+                    'pending': { text: '待支付', class: 'warning' },
+                    'paid': { text: '已支付', class: 'success' },
+                    'completed': { text: '已完成', class: 'info' },
+                    'cancelled': { text: '已取消', class: 'danger' },
+                    'refunded': { text: '已退款', class: 'secondary' }
+                };
+                
+                const paymentMap = {
+                    'alipay': '支付宝',
+                    'wechat': '微信支付',
+                    'cash': '现金',
+                    'card': '银行卡',
+                    'other': '其他'
+                };
+                
+                data.items.forEach(item => {
+                    const status = statusMap[item.status] || { text: item.status, class: 'secondary' };
+                    const payment = paymentMap[item.payment_method] || item.payment_method;
+                    
+                    tbody.append(`
+                        <tr>
+                            <td><code>${item.order_no}</code></td>
+                            <td>${item.device_name || '-'}</td>
+                            <td>${item.user_nickname || '匿名用户'}</td>
+                            <td class="text-success font-weight-bold">${formatCurrency(item.total_amount)}</td>
+                            <td>${payment}</td>
+                            <td><span class="badge badge-${status.class}">${status.text}</span></td>
+                            <td>${item.created_at || '-'}</td>
+                        </tr>
+                    `);
+                });
+                
+                renderPagination(data.total || 0);
+            } catch (error) {
+                console.error('加载销售明细失败:', error);
+            }
+        }
+        
+        function renderPagination(total) {
+            const pagination = $('#pagination');
+            pagination.empty();
+            
+            const totalPages = Math.ceil(total / pageSize);
+            
+            if (totalPages <= 1) return;
+            
+            const prevDisabled = currentPage <= 1;
+            pagination.append(`
+                <li class="page-item ${prevDisabled ? 'disabled' : ''}">
+                    <a class="page-link" href="#" data-page="${currentPage - 1}">上一页</a>
+                </li>
+            `);
+            
+            const startPage = Math.max(1, currentPage - 2);
+            const endPage = Math.min(totalPages, startPage + 4);
+            
+            for (let i = startPage; i <= endPage; i++) {
+                pagination.append(`
+                    <li class="page-item ${i === currentPage ? 'active' : ''}">
+                        <a class="page-link" href="#" data-page="${i}">${i}</a>
+                    </li>
+                `);
+            }
+            
+            const nextDisabled = currentPage >= totalPages;
+            pagination.append(`
+                <li class="page-item ${nextDisabled ? 'disabled' : ''}">
+                    <a class="page-link" href="#" data-page="${currentPage + 1}">下一页</a>
+                </li>
+            `);
+            
+            pagination.find('a.page-link').on('click', function(e) {
+                e.preventDefault();
+                const page = parseInt($(this).data('page'));
+                if (page >= 1 && page <= totalPages) {
+                    currentPage = page;
+                    loadSalesList();
+                }
+            });
+        }
+    </script>
+</body>
+</html>

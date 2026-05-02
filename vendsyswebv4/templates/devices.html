@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>设备效能分析 - 自动售后机数据统计与分析系统</title>
+    
+    <!-- Bootstrap 4 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- jQuery -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    
+    <!-- Bootstrap 4 JS Bundle (includes Popper) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- 自定义样式 -->
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #858796;
+            --success-color: #1cc88a;
+            --info-color: #36b9cc;
+            --warning-color: #f6c23e;
+            --danger-color: #e74a3b;
+            --dark-color: #5a5c69;
+            --light-color: #f8f9fc;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fc;
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+        
+        .navbar-dark.bg-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        }
+        
+        .sidebar {
+            position: fixed;
+            top: 56px;
+            left: 0;
+            width: 250px;
+            height: calc(100vh - 56px);
+            background: linear-gradient(180deg, #4e73df 0%, #224abe 100%);
+            color: white;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .sidebar-menu li a {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar-menu li a:hover,
+        .sidebar-menu li a.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .sidebar-menu li a i {
+            width: 30px;
+            text-align: center;
+            font-size: 1.2rem;
+        }
+        
+        .sidebar-menu li a span {
+            margin-left: 10px;
+            white-space: nowrap;
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            padding-top: 56px;
+            min-height: 100vh;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 0.35rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            margin-bottom: 1.5rem;
+        }
+        
+        .card-header {
+            background-color: #f8f9fc;
+            border-bottom: 1px solid #e3e6f0;
+            padding: 0.75rem 1.25rem;
+        }
+        
+        .card-header h6 {
+            margin: 0;
+            font-weight: 700;
+            color: #4e73df;
+        }
+        
+        .stats-card {
+            border-left: 0.25rem solid;
+            padding: 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .stats-card.primary { border-left-color: #4e73df; }
+        .stats-card.success { border-left-color: #1cc88a; }
+        .stats-card.info { border-left-color: #36b9cc; }
+        .stats-card.warning { border-left-color: #f6c23e; }
+        .stats-card.danger { border-left-color: #e74a3b; }
+        
+        .stats-card .stats-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0;
+        }
+        
+        .stats-card .stats-label {
+            color: #858796;
+            font-size: 0.85rem;
+            margin: 0;
+        }
+        
+        .stats-card .stats-icon {
+            font-size: 2rem;
+            color: #dddfeb;
+        }
+        
+        .table thead th {
+            background-color: #f8f9fc;
+            border-bottom: 2px solid #e3e6f0;
+            font-weight: 600;
+            color: #5a5c69;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+        }
+        
+        .badge {
+            padding: 0.4em 0.6em;
+            font-weight: 500;
+        }
+        
+        .badge-success { background-color: #1cc88a; }
+        .badge-warning { background-color: #f6c23e; }
+        .badge-danger { background-color: #e74a3b; }
+        .badge-info { background-color: #36b9cc; }
+        .badge-secondary { background-color: #858796; }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        
+        .page-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #5a5c69;
+            margin-bottom: 1.5rem;
+        }
+        
+        .breadcrumb {
+            background-color: transparent;
+            padding: 0;
+            margin-bottom: 1rem;
+        }
+        
+        .breadcrumb-item a { color: #4e73df; }
+        .breadcrumb-item.active { color: #858796; }
+        
+        .progress {
+            height: 20px;
+            border-radius: 10px;
+        }
+        
+        .progress-bar {
+            border-radius: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.show { transform: translateX(0); }
+            .main-content { margin-left: 0; }
+        }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+        <a class="navbar-brand" href="/">
+            <i class="fa fa-cubes mr-2"></i>
+            自动售后机数据分析
+        </a>
+        
+        <button class="navbar-toggler" type="button" id="sidebarToggleMobile">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse justify-content-end">
+            <ul class="navbar-nav">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="notificationsDropdown" role="button" data-toggle="dropdown">
+                        <i class="fa fa-bell-o"></i>
+                        <span class="badge badge-danger">3</span>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right">
+                        <a class="dropdown-item" href="#">
+                            <i class="fa fa-exclamation-triangle text-warning mr-2"></i>
+                            设备A001离线
+                        </a>
+                        <a class="dropdown-item" href="#">
+                            <i class="fa fa-exclamation-circle text-danger mr-2"></i>
+                            库存不足预警
+                        </a>
+                        <a class="dropdown-item" href="#">
+                            <i class="fa fa-info-circle text-info mr-2"></i>
+                            系统更新通知
+                        </a>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">
+                        <i class="fa fa-user-circle-o"></i>
+                        管理员
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    
+    <aside class="sidebar" id="sidebar">
+        <ul class="sidebar-menu">
+            <li>
+                <a href="/sales">
+                    <i class="fa fa-line-chart"></i>
+                    <span>销售报表</span>
+                </a>
+            </li>
+            <li>
+                <a href="/products">
+                    <i class="fa fa-shopping-bag"></i>
+                    <span>商品分析</span>
+                </a>
+            </li>
+            <li>
+                <a href="/devices" class="active">
+                    <i class="fa fa-cogs"></i>
+                    <span>设备效能</span>
+                </a>
+            </li>
+            <li>
+                <a href="/users">
+                    <i class="fa fa-users"></i>
+                    <span>用户行为</span>
+                </a>
+            </li>
+            <li>
+                <a href="/dashboard">
+                    <i class="fa fa-tv"></i>
+                    <span>可视化大屏</span>
+                </a>
+            </li>
+        </ul>
+    </aside>
+    
+    <main class="main-content p-4" id="mainContent">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/">首页</a></li>
+                <li class="breadcrumb-item active">设备效能分析</li>
+            </ol>
+        </nav>
+        
+        <h2 class="page-title">
+            <i class="fa fa-cogs text-primary mr-2"></i>
+            设备效能分析
+        </h2>
+        
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6><i class="fa fa-filter mr-2"></i>查询条件</h6>
+            </div>
+            <div class="card-body">
+                <div class="form-row align-items-end">
+                    <div class="form-group col-md-3">
+                        <label>设备状态</label>
+                        <select id="deviceStatus" class="form-control">
+                            <option value="">全部状态</option>
+                            <option value="online">在线</option>
+                            <option value="offline">离线</option>
+                            <option value="maintenance">维护中</option>
+                            <option value="fault">故障</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label>开始日期</label>
+                        <input type="date" id="startDate" class="form-control">
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label>结束日期</label>
+                        <input type="date" id="endDate" class="form-control">
+                    </div>
+                    <div class="form-group col-md-3">
+                        <button id="btnQuery" class="btn btn-primary btn-block">
+                            <i class="fa fa-search mr-1"></i>查询
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stats-card primary">
+                    <div>
+                        <p class="stats-value" id="totalDevices">0</p>
+                        <p class="stats-label">设备总数</p>
+                    </div>
+                    <div>
+                        <i class="fa fa-cubes stats-icon"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stats-card success">
+                    <div>
+                        <p class="stats-value" id="onlineDevices">0</p>
+                        <p class="stats-label">在线设备</p>
+                    </div>
+                    <div>
+                        <i class="fa fa-check-circle stats-icon"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stats-card warning">
+                    <div>
+                        <p class="stats-value" id="maintenanceCount">0</p>
+                        <p class="stats-label">维护中</p>
+                    </div>
+                    <div>
+                        <i class="fa fa-wrench stats-icon"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stats-card danger">
+                    <div>
+                        <p class="stats-value" id="offlineDevices">0</p>
+                        <p class="stats-label">离线/故障</p>
+                    </div>
+                    <div>
+                        <i class="fa fa-exclamation-circle stats-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6><i class="fa fa-bar-chart mr-2"></i>设备产出排行 (Top 10)</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="deviceOutputChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6><i class="fa fa-pie-chart mr-2"></i>设备状态分布</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="deviceStatusChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fa fa-wrench mr-2"></i>运维成本分析</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h4 class="text-primary" id="totalMaintenanceCost">¥0</h4>
+                                <p class="text-muted mb-0">总运维成本</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h4 class="text-info" id="avgMaintenanceCost">¥0</h4>
+                                <p class="text-muted mb-0">单次平均成本</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h4 class="text-warning" id="totalMaintenanceTime">0</h4>
+                                <p class="text-muted mb-0">总处理时长(分钟)</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h4 class="text-danger" id="failureRate">0%</h4>
+                                <p class="text-muted mb-0">设备故障率</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fa fa-exclamation-triangle mr-2"></i>库存不足预警</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="lowStockTable">
+                        <thead>
+                            <tr>
+                                <th>设备编号</th>
+                                <th>设备名称</th>
+                                <th>位置</th>
+                                <th>商品编码</th>
+                                <th>商品名称</th>
+                                <th>当前库存</th>
+                                <th>最大库存</th>
+                                <th>预警状态</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6><i class="fa fa-list mr-2"></i>设备列表</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="devicesTable">
+                        <thead>
+                            <tr>
+                                <th>设备编号</th>
+                                <th>设备名称</th>
+                                <th>位置</th>
+                                <th>状态</th>
+                                <th>容量</th>
+                                <th>销售额</th>
+                                <th>订单数</th>
+                                <th>最后在线</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <script>
+        const API_BASE = '/api/v1';
+        let deviceOutputChart = null;
+        let deviceStatusChart = null;
+        
+        function getToday() {
+            return new Date().toISOString().split('T')[0];
+        }
+        
+        function getDaysAgo(days) {
+            const date = new Date();
+            date.setDate(date.getDate() - days);
+            return date.toISOString().split('T')[0];
+        }
+        
+        function formatNumber(num) {
+            if (num === null || num === undefined) return '0';
+            return num.toLocaleString('zh-CN');
+        }
+        
+        function formatCurrency(num) {
+            if (num === null || num === undefined) return '¥0.00';
+            return '¥' + num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+        
+        function formatPercent(num) {
+            if (num === null || num === undefined) return '0.00%';
+            return num.toFixed(2) + '%';
+        }
+        
+        async function apiGet(url, params = {}) {
+            const queryString = new URLSearchParams(params).toString();
+            const fullUrl = queryString ? `${API_BASE}${url}?${queryString}` : `${API_BASE}${url}`;
+            
+            try {
+                const response = await fetch(fullUrl);
+                const data = await response.json();
+                if (data.code === 200) {
+                    return data.data;
+                } else {
+                    throw new Error(data.message || '请求失败');
+                }
+            } catch (error) {
+                console.error('API请求失败:', error);
+                throw error;
+            }
+        }
+        
+        $('#sidebarToggleMobile').on('click', function() {
+            $('#sidebar').toggleClass('show');
+        });
+        
+        $(document).ready(function() {
+            $('#startDate').val(getDaysAgo(30));
+            $('#endDate').val(getToday());
+            
+            loadOverview();
+            loadDevicePerformance();
+            loadMaintenanceAnalysis();
+            loadLowStockDevices();
+            loadDevicesList();
+        });
+        
+        $('#btnQuery').on('click', function() {
+            loadOverview();
+            loadDevicePerformance();
+            loadMaintenanceAnalysis();
+            loadLowStockDevices();
+            loadDevicesList();
+        });
+        
+        async function loadOverview() {
+            try {
+                const overview = await apiGet('/devices/overview');
+                const performance = await apiGet('/devices/performance', {
+                    start_date: $('#startDate').val(),
+                    end_date: $('#endDate').val()
+                });
+                
+                $('#totalDevices').text(overview?.total_devices || 0);
+                $('#onlineDevices').text(overview?.online_count || 0);
+                $('#maintenanceCount').text(overview?.maintenance_count || 0);
+                $('#offlineDevices').text((overview?.offline_count || 0) + (overview?.fault_count || 0));
+            } catch (error) {
+                console.error('加载设备概览失败:', error);
+            }
+        }
+        
+        async function loadDevicePerformance() {
+            try {
+                const data = await apiGet('/devices/performance', {
+                    start_date: $('#startDate').val(),
+                    end_date: $('#endDate').val(),
+                    limit: 10
+                });
+                
+                if (!data || data.length === 0) {
+                    return;
+                }
+                
+                const labels = data.map(item => item.device_code || '-');
+                const salesData = data.map(item => item.total_sales || 0);
+                const orderData = data.map(item => item.order_count || 0);
+                
+                const ctx1 = document.getElementById('deviceOutputChart').getContext('2d');
+                
+                if (deviceOutputChart) {
+                    deviceOutputChart.destroy();
+                }
+                
+                deviceOutputChart = new Chart(ctx1, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: '销售额',
+                                data: salesData,
+                                backgroundColor: 'rgba(78, 115, 223, 0.8)',
+                                borderColor: '#4e73df',
+                                borderWidth: 1,
+                                yAxisID: 'y'
+                            },
+                            {
+                                label: '订单数',
+                                data: orderData,
+                                backgroundColor: 'rgba(28, 200, 138, 0.8)',
+                                borderColor: '#1cc88a',
+                                borderWidth: 1,
+                                yAxisID: 'y1'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                                title: {
+                                    display: true,
+                                    text: '销售额 (元)'
+                                }
+                            },
+                            y1: {
+                                type: 'linear',
+                                display: true,
+                                position: 'right',
+                                title: {
+                                    display: true,
+                                    text: '订单数'
+                                },
+                                grid: {
+                                    drawOnChartArea: false
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'top'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            if (context.datasetIndex === 0) {
+                                                label += formatCurrency(context.parsed.y);
+                                            } else {
+                                                label += formatNumber(context.parsed.y) + ' 单';
+                                            }
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                const overview = await apiGet('/devices/overview');
+                const ctx2 = document.getElementById('deviceStatusChart').getContext('2d');
+                
+                if (deviceStatusChart) {
+                    deviceStatusChart.destroy();
+                }
+                
+                deviceStatusChart = new Chart(ctx2, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['在线', '离线', '维护中', '故障'],
+                        datasets: [{
+                            data: [
+                                overview?.online_count || 0,
+                                overview?.offline_count || 0,
+                                overview?.maintenance_count || 0,
+                                overview?.fault_count || 0
+                            ],
+                            backgroundColor: [
+                                '#1cc88a',
+                                '#858796',
+                                '#f6c23e',
+                                '#e74a3b'
+                            ],
+                            borderWidth: 2,
+                            borderColor: '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right'
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('加载设备效能失败:', error);
+            }
+        }
+        
+        async function loadMaintenanceAnalysis() {
+            try {
+                const data = await apiGet('/devices/maintenance-analysis', {
+                    start_date: $('#startDate').val(),
+                    end_date: $('#endDate').val()
+                });
+                
+                if (!data) return;
+                
+                $('#totalMaintenanceCost').text(formatCurrency(data.total_cost || 0));
+                $('#avgMaintenanceCost').text(formatCurrency(data.avg_cost || 0));
+                $('#totalMaintenanceTime').text(formatNumber(data.total_duration || 0));
+                
+                const overview = await apiGet('/devices/overview');
+                const totalDevices = overview?.total_devices || 1;
+                const faultDevices = overview?.fault_count || 0;
+                const failureRate = (faultDevices / totalDevices * 100);
+                $('#failureRate').text(formatPercent(failureRate));
+            } catch (error) {
+                console.error('加载运维分析失败:', error);
+            }
+        }
+        
+        async function loadLowStockDevices() {
+            try {
+                const data = await apiGet('/devices/low-stock');
+                
+                const tbody = $('#lowStockTable tbody');
+                tbody.empty();
+                
+                if (!data || data.length === 0) {
+                    tbody.append('<tr><td colspan="8" class="text-center text-muted">暂无库存不足预警</td></tr>');
+                    return;
+                }
+                
+                data.forEach(item => {
+                    const currentStock = item.current_stock || 0;
+                    const maxStock = item.max_stock || 100;
+                    const stockPercent = (currentStock / maxStock * 100);
+                    const statusClass = stockPercent < 10 ? 'danger' : stockPercent < 30 ? 'warning' : 'info';
+                    const statusText = stockPercent < 10 ? '严重不足' : stockPercent < 30 ? '库存不足' : '库存偏低';
+                    
+                    tbody.append(`
+                        <tr>
+                            <td><code>${item.device_code || '-'}</code></td>
+                            <td>${item.device_name || '-'}</td>
+                            <td>${item.device_location || '-'}</td>
+                            <td><code>${item.product_code || '-'}</code></td>
+                            <td>${item.product_name || '-'}</td>
+                            <td class="text-danger font-weight-bold">${formatNumber(currentStock)}</td>
+                            <td>${formatNumber(maxStock)}</td>
+                            <td><span class="badge badge-${statusClass}">${statusText}</span></td>
+                        </tr>
+                    `);
+                });
+            } catch (error) {
+                console.error('加载库存预警失败:', error);
+            }
+        }
+        
+        async function loadDevicesList() {
+            try {
+                const data = await apiGet('/devices/list', {
+                    status: $('#deviceStatus').val(),
+                    page_size: 20
+                });
+                
+                const tbody = $('#devicesTable tbody');
+                tbody.empty();
+                
+                if (!data || !data.items || data.items.length === 0) {
+                    tbody.append('<tr><td colspan="8" class="text-center text-muted">暂无设备数据</td></tr>');
+                    return;
+                }
+                
+                const statusMap = {
+                    'online': { text: '在线', class: 'success' },
+                    'offline': { text: '离线', class: 'secondary' },
+                    'maintenance': { text: '维护中', class: 'warning' },
+                    'fault': { text: '故障', class: 'danger' }
+                };
+                
+                data.items.forEach(item => {
+                    const status = statusMap[item.status] || { text: item.status, class: 'secondary' };
+                    
+                    tbody.append(`
+                        <tr>
+                            <td><code>${item.device_code || '-'}</code></td>
+                            <td><strong>${item.device_name || '-'}</strong></td>
+                            <td>${item.location || '-'}</td>
+                            <td><span class="badge badge-${status.class}">${status.text}</span></td>
+                            <td>${formatNumber(item.capacity || 0)}</td>
+                            <td class="text-success font-weight-bold">${formatCurrency(item.total_sales || 0)}</td>
+                            <td>${formatNumber(item.order_count || 0)}</td>
+                            <td>${item.last_online_at || '-'}</td>
+                        </tr>
+                    `);
+                });
+            } catch (error) {
+                console.error('加载设备列表失败:', error);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商品分析 - 自动售后机数据统计与分析系统</title>
+    
+    <!-- Bootstrap 4 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- jQuery -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    
+    <!-- Bootstrap 4 JS Bundle (includes Popper) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- 自定义样式 -->
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #858796;
+            --success-color: #1cc88a;
+            --info-color: #36b9cc;
+            --warning-color: #f6c23e;
+            --danger-color: #e74a3b;
+            --dark-color: #5a5c69;
+            --light-color: #f8f9fc;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fc;
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+        
+        .navbar-dark.bg-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        }
+        
+        .sidebar {
+            position: fixed;
+            top: 56px;
+            left: 0;
+            width: 250px;
+            height: calc(100vh - 56px);
+            background: linear-gradient(180deg, #4e73df 0%, #224abe 100%);
+            color: white;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .sidebar-menu li a {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar-menu li a:hover,
+        .sidebar-menu li a.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .sidebar-menu li a i {
+            width: 30px;
+            text-align: center;
+            font-size: 1.2rem;
+        }
+        
+        .sidebar-menu li a span {
+            margin-left: 10px;
+            white-space: nowrap;
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            padding-top: 56px;
+            min-height: 100vh;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 0.35rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            margin-bottom: 1.5rem;
+        }
+        
+        .card-header {
+            background-color: #f8f9fc;
+            border-bottom: 1px solid #e3e6f0;
+            padding: 0.75rem 1.25rem;
+        }
+        
+        .card-header h6 {
+            margin: 0;
+            font-weight: 700;
+            color: #4e73df;
+        }
+        
+        .stats-card {
+            border-left: 0.25rem solid;
+            padding: 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .stats-card.primary { border-left-color: #4e73df; }
+        .stats-card.success { border-left-color: #1cc88a; }
+        .stats-card.info { border-left-color: #36b9cc; }
+        .stats-card.warning { border-left-color: #f6c23e; }
+        .stats-card.danger { border-left-color: #e74a3b; }
+        
+        .stats-card .stats-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0;
+        }
+        
+        .stats-card .stats-label {
+            color: #858796;
+            font-size: 0.85rem;
+            margin: 0;
+        }
+        
+        .stats-card .stats-icon {
+            font-size: 2rem;
+            color: #dddfeb;
+        }
+        
+        .table thead th {
+            background-color: #f8f9fc;
+            border-bottom: 2px solid #e3e6f0;
+            font-weight: 600;
+            color: #5a5c69;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+        }
+        
+        .badge {
+            padding: 0.4em 0.6em;
+            font-weight: 500;
+        }
+        
+        .badge-success { background-color: #1cc88a; }
+        .badge-warning { background-color: #f6c23e; }
+        .badge-danger { background-color: #e74a3b; }
+        .badge-info { background-color: #36b9cc; }
+        .badge-secondary { background-color: #858796; }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        
+        .page-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #5a5c69;
+            margin-bottom: 1.5rem;
+        }
+        
+        .breadcrumb {
+            background-color: transparent;
+            padding: 0;
+            margin-bottom: 1rem;
+        }
+        
+        .breadcrumb-item a { color: #4e73df; }
+        .breadcrumb-item.active { color: #858796; }
+        
+        .progress {
+            height: 20px;
+            border-radius: 10px;
+        }
+        
+        .progress-bar {
+            border-radius: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.show { transform: translateX(0); }
+            .main-content { margin-left: 0; }
+        }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+        <a class="navbar-brand" href="/">
+            <i class="fa fa-cubes mr-2"></i>
+            自动售后机数据分析
+        </a>
+        
+        <button class="navbar-toggler" type="button" id="sidebarToggleMobile">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse justify-content-end">
+            <ul class="navbar-nav">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="notificationsDropdown" role="button" data-toggle="dropdown">
+                        <i class="fa fa-bell-o"></i>
+                        <span class="badge badge-danger">3</span>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right">
+                        <a class="dropdown-item" href="#">
+                            <i class="fa fa-exclamation-triangle text-warning mr-2"></i>
+                            设备A001离线
+                        </a>
+                        <a class="dropdown-item" href="#">
+                            <i class="fa fa-exclamation-circle text-danger mr-2"></i>
+                            库存不足预警
+                        </a>
+                        <a class="dropdown-item" href="#">
+                            <i class="fa fa-info-circle text-info mr-2"></i>
+                            系统更新通知
+                        </a>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">
+                        <i class="fa fa-user-circle-o"></i>
+                        管理员
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    
+    <aside class="sidebar" id="sidebar">
+        <ul class="sidebar-menu">
+            <li>
+                <a href="/sales">
+                    <i class="fa fa-line-chart"></i>
+                    <span>销售报表</span>
+                </a>
+            </li>
+            <li>
+                <a href="/products" class="active">
+                    <i class="fa fa-shopping-bag"></i>
+                    <span>商品分析</span>
+                </a>
+            </li>
+            <li>
+                <a href="/devices">
+                    <i class="fa fa-cogs"></i>
+                    <span>设备效能</span>
+                </a>
+            </li>
+            <li>
+                <a href="/users">
+                    <i class="fa fa-users"></i>
+                    <span>用户行为</span>
+                </a>
+            </li>
+            <li>
+                <a href="/dashboard">
+                    <i class="fa fa-tv"></i>
+                    <span>可视化大屏</span>
+                </a>
+            </li>
+        </ul>
+    </aside>
+    
+    <main class="main-content p-4" id="mainContent">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/">首页</a></li>
+                <li class="breadcrumb-item active">商品分析</li>
+            </ol>
+        </nav>
+        
+        <h2 class="page-title">
+            <i class="fa fa-shopping-bag text-primary mr-2"></i>
+            商品分析
+        </h2>
+        
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6><i class="fa fa-filter mr-2"></i>查询条件</h6>
+            </div>
+            <div class="card-body">
+                <div class="form-row align-items-end">
+                    <div class="form-group col-md-3">
+                        <label>商品分类</label>
+                        <select id="category" class="form-control">
+                            <option value="">全部分类</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label>开始日期</label>
+                        <input type="date" id="startDate" class="form-control">
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label>结束日期</label>
+                        <input type="date" id="endDate" class="form-control">
+                    </div>
+                    <div class="form-group col-md-3">
+                        <button id="btnQuery" class="btn btn-primary btn-block">
+                            <i class="fa fa-search mr-1"></i>查询
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stats-card primary">
+                    <div>
+                        <p class="stats-value" id="totalProducts">0</p>
+                        <p class="stats-label">在售商品数</p>
+                    </div>
+                    <div>
+                        <i class="fa fa-cubes stats-icon"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stats-card success">
+                    <div>
+                        <p class="stats-value" id="totalCategories">0</p>
+                        <p class="stats-label">商品分类数</p>
+                    </div>
+                    <div>
+                        <i class="fa fa-folder-open stats-icon"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stats-card info">
+                    <div>
+                        <p class="stats-value" id="avgMargin">0%</p>
+                        <p class="stats-label">平均毛利率</p>
+                    </div>
+                    <div>
+                        <i class="fa fa-percent stats-icon"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stats-card warning">
+                    <div>
+                        <p class="stats-value" id="slowSellingCount">0</p>
+                        <p class="stats-label">滞销商品数</p>
+                    </div>
+                    <div>
+                        <i class="fa fa-exclamation-triangle stats-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6><i class="fa fa-trophy mr-2"></i>热销商品排行 (Top 10)</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="hotProductsContainer">
+                            <div class="chart-container">
+                                <canvas id="hotProductsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6><i class="fa fa-pie-chart mr-2"></i>分类毛利率分析</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="marginChartContainer">
+                            <div class="chart-container">
+                                <canvas id="marginChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fa fa-exclamation-triangle mr-2"></i>滞销商品分析</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="slowSellingTable">
+                        <thead>
+                            <tr>
+                                <th>商品编码</th>
+                                <th>商品名称</th>
+                                <th>分类</th>
+                                <th>售价</th>
+                                <th>成本价</th>
+                                <th>毛利率</th>
+                                <th>销量</th>
+                                <th>库存</th>
+                                <th>状态</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6><i class="fa fa-list mr-2"></i>商品列表</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="productsTable">
+                        <thead>
+                            <tr>
+                                <th>商品编码</th>
+                                <th>商品名称</th>
+                                <th>分类</th>
+                                <th>售价</th>
+                                <th>成本价</th>
+                                <th>毛利率</th>
+                                <th>状态</th>
+                                <th>创建时间</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <script>
+        const API_BASE = '/api/v1';
+        let hotProductsChart = null;
+        let marginChart = null;
+        
+        function getToday() {
+            return new Date().toISOString().split('T')[0];
+        }
+        
+        function getDaysAgo(days) {
+            const date = new Date();
+            date.setDate(date.getDate() - days);
+            return date.toISOString().split('T')[0];
+        }
+        
+        function formatNumber(num) {
+            if (num === null || num === undefined) return '0';
+            return num.toLocaleString('zh-CN');
+        }
+        
+        function formatCurrency(num) {
+            if (num === null || num === undefined) return '¥0.00';
+            return '¥' + num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+        
+        function formatPercent(num) {
+            if (num === null || num === undefined) return '0.00%';
+            return num.toFixed(2) + '%';
+        }
+        
+        async function apiGet(url, params = {}) {
+            const queryString = new URLSearchParams(params).toString();
+            const fullUrl = queryString ? `${API_BASE}${url}?${queryString}` : `${API_BASE}${url}`;
+            
+            try {
+                const response = await fetch(fullUrl);
+                const data = await response.json();
+                if (data.code === 200) {
+                    return data.data;
+                } else {
+                    throw new Error(data.message || '请求失败');
+                }
+            } catch (error) {
+                console.error('API请求失败:', error);
+                throw error;
+            }
+        }
+        
+        $('#sidebarToggleMobile').on('click', function() {
+            $('#sidebar').toggleClass('show');
+        });
+        
+        $(document).ready(function() {
+            $('#startDate').val(getDaysAgo(30));
+            $('#endDate').val(getToday());
+            
+            loadCategories();
+            loadHotProducts();
+            loadMarginAnalysis();
+            loadSlowSellingProducts();
+            loadProductsList();
+            loadOverview();
+        });
+        
+        $('#btnQuery').on('click', function() {
+            loadHotProducts();
+            loadMarginAnalysis();
+            loadSlowSellingProducts();
+            loadProductsList();
+            loadOverview();
+        });
+        
+        async function loadCategories() {
+            try {
+                const data = await apiGet('/products/categories');
+                const select = $('#category');
+                select.html('<option value="">全部分类</option>');
+                
+                if (data && data.length > 0) {
+                    data.forEach(cat => {
+                        select.append(`<option value="${cat}">${cat}</option>`);
+                    });
+                }
+            } catch (error) {
+                console.error('加载商品分类失败:', error);
+            }
+        }
+        
+        async function loadOverview() {
+            try {
+                const products = await apiGet('/products/list', { page_size: 1000 });
+                const hotProducts = await apiGet('/products/hot', {
+                    start_date: $('#startDate').val(),
+                    end_date: $('#endDate').val(),
+                    limit: 10
+                });
+                const slowProducts = await apiGet('/products/slow-selling', {
+                    start_date: $('#startDate').val(),
+                    end_date: $('#endDate').val()
+                });
+                const marginData = await apiGet('/products/profit-margin');
+                
+                $('#totalProducts').text(products?.total || 0);
+                $('#slowSellingCount').text(slowProducts?.length || 0);
+                
+                const categories = await apiGet('/products/categories');
+                $('#totalCategories').text(categories?.length || 0);
+                
+                if (marginData && marginData.length > 0) {
+                    const avgMargin = marginData.reduce((sum, item) => sum + (item.avg_margin || 0), 0) / marginData.length;
+                    $('#avgMargin').text(formatPercent(avgMargin));
+                }
+            } catch (error) {
+                console.error('加载概览数据失败:', error);
+            }
+        }
+        
+        async function loadHotProducts() {
+            try {
+                const data = await apiGet('/products/hot', {
+                    start_date: $('#startDate').val(),
+                    end_date: $('#endDate').val(),
+                    limit: 10
+                });
+                
+                if (!data || data.length === 0) {
+                    $('#hotProductsContainer').html('<div class="text-center text-muted py-5"><i class="fa fa-database fa-3x mb-3"></i><p>暂无热销商品数据</p></div>');
+                    return;
+                }
+                
+                const labels = data.map(item => item.product_name || '-');
+                const salesQty = data.map(item => item.total_quantity || 0);
+                const salesAmount = data.map(item => item.total_sales || 0);
+                
+                const ctx = document.getElementById('hotProductsChart').getContext('2d');
+                
+                if (hotProductsChart) {
+                    hotProductsChart.destroy();
+                }
+                
+                hotProductsChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: '销量',
+                                data: salesQty,
+                                backgroundColor: 'rgba(78, 115, 223, 0.8)',
+                                borderColor: '#4e73df',
+                                borderWidth: 1,
+                                yAxisID: 'y'
+                            },
+                            {
+                                label: '销售额',
+                                data: salesAmount,
+                                backgroundColor: 'rgba(28, 200, 138, 0.8)',
+                                borderColor: '#1cc88a',
+                                borderWidth: 1,
+                                yAxisID: 'y1'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                ticks: {
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                }
+                            },
+                            y: {
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                                title: {
+                                    display: true,
+                                    text: '销量 (件)'
+                                }
+                            },
+                            y1: {
+                                type: 'linear',
+                                display: true,
+                                position: 'right',
+                                title: {
+                                    display: true,
+                                    text: '销售额 (元)'
+                                },
+                                grid: {
+                                    drawOnChartArea: false
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'top'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            if (context.datasetIndex === 0) {
+                                                label += formatNumber(context.parsed.y) + ' 件';
+                                            } else {
+                                                label += formatCurrency(context.parsed.y);
+                                            }
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('加载热销商品失败:', error);
+            }
+        }
+        
+        async function loadMarginAnalysis() {
+            try {
+                const data = await apiGet('/products/profit-margin');
+                
+                if (!data || data.length === 0) {
+                    $('#marginChartContainer').html('<div class="text-center text-muted py-5"><i class="fa fa-database fa-3x mb-3"></i><p>暂无毛利率数据</p></div>');
+                    return;
+                }
+                
+                const labels = data.map(item => item.category || '其他');
+                const marginData = data.map(item => item.avg_margin || 0);
+                const salesData = data.map(item => item.total_sales || 0);
+                
+                const ctx = document.getElementById('marginChart').getContext('2d');
+                
+                if (marginChart) {
+                    marginChart.destroy();
+                }
+                
+                const colors = [
+                    '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', 
+                    '#858796', '#6610f2', '#20c997', '#fd7e14', '#6f42c1'
+                ];
+                
+                marginChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: salesData,
+                            backgroundColor: colors.slice(0, labels.length),
+                            borderWidth: 2,
+                            borderColor: '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.parsed || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = total > 0 ? (value / total * 100) : 0;
+                                        const margin = marginData[context.dataIndex] || 0;
+                                        return `${label}: ${formatCurrency(value)} (毛利率: ${formatPercent(margin)})`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('加载毛利率分析失败:', error);
+            }
+        }
+        
+        async function loadSlowSellingProducts() {
+            try {
+                const data = await apiGet('/products/slow-selling', {
+                    start_date: $('#startDate').val(),
+                    end_date: $('#endDate').val()
+                });
+                
+                const tbody = $('#slowSellingTable tbody');
+                tbody.empty();
+                
+                if (!data || data.length === 0) {
+                    tbody.append('<tr><td colspan="9" class="text-center text-muted">暂无滞销商品</td></tr>');
+                    return;
+                }
+                
+                data.forEach(item => {
+                    const margin = item.gross_margin || 0;
+                    const marginClass = margin >= 30 ? 'success' : margin >= 20 ? 'info' : 'warning';
+                    const salesQty = item.total_quantity || 0;
+                    const statusClass = salesQty === 0 ? 'danger' : salesQty < 5 ? 'warning' : 'info';
+                    const statusText = salesQty === 0 ? '零销量' : salesQty < 5 ? '低销量' : '正常';
+                    
+                    tbody.append(`
+                        <tr>
+                            <td><code>${item.product_code || '-'}</code></td>
+                            <td><strong>${item.product_name || '-'}</strong></td>
+                            <td>${item.category || '-'}</td>
+                            <td class="text-success">${formatCurrency(item.sale_price)}</td>
+                            <td>${formatCurrency(item.cost_price)}</td>
+                            <td><span class="badge badge-${marginClass}">${formatPercent(margin)}</span></td>
+                            <td>${formatNumber(salesQty)}</td>
+                            <td>${formatNumber(item.current_inventory || 0)}</td>
+                            <td><span class="badge badge-${statusClass}">${statusText}</span></td>
+                        </tr>
+                    `);
+                });
+            } catch (error) {
+                console.error('加载滞销商品失败:', error);
+            }
+        }
+        
+        async function loadProductsList() {
+            try {
+                const data = await apiGet('/products/list', {
+                    category: $('#category').val(),
+                    page_size: 20
+                });
+                
+                const tbody = $('#productsTable tbody');
+                tbody.empty();
+                
+                if (!data || !data.items || data.items.length === 0) {
+                    tbody.append('<tr><td colspan="8" class="text-center text-muted">暂无商品数据</td></tr>');
+                    return;
+                }
+                
+                const statusMap = {
+                    'active': { text: '在售', class: 'success' },
+                    'inactive': { text: '下架', class: 'danger' },
+                    'out_of_stock': { text: '缺货', class: 'warning' }
+                };
+                
+                data.items.forEach(item => {
+                    const status = statusMap[item.status] || { text: item.status, class: 'secondary' };
+                    const margin = item.gross_margin || 0;
+                    const marginClass = margin >= 30 ? 'text-success' : margin >= 20 ? 'text-info' : 'text-warning';
+                    
+                    tbody.append(`
+                        <tr>
+                            <td><code>${item.product_code || '-'}</code></td>
+                            <td><strong>${item.product_name || '-'}</strong></td>
+                            <td>${item.category || '-'}</td>
+                            <td class="text-success font-weight-bold">${formatCurrency(item.sale_price)}</td>
+                            <td>${formatCurrency(item.cost_price)}</td>
+                            <td class="${marginClass} font-weight-bold">${formatPercent(margin)}</td>
+                            <td><span class="badge badge-${status.class}">${status.text}</span></td>
+                            <td>${item.created_at || '-'}</td>
+                        </tr>
+                    `);
+                });
+            } catch (error) {
+                console.error('加载商品列表失败:', error);
+            }
+        }
+    </script>
+</body>
+</html>

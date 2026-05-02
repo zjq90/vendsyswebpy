@@ -1,0 +1,555 @@
+{% extends "base.html" %}
+
+{% block title %}商品管理 - 自动售货机管理系统{% endblock %}
+
+{% block content %}
+<!-- 页面标题 -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-box text-primary mr-2"></i>商品管理</h2>
+    <button class="btn btn-primary" data-toggle="modal" data-target="#productModal" onclick="resetProductForm()">
+        <i class="fas fa-plus mr-1"></i>添加商品
+    </button>
+</div>
+
+<!-- 搜索和筛选栏 -->
+<div class="card shadow mb-4">
+    <div class="card-body">
+        <form id="searchForm" class="form-row align-items-end">
+            <div class="form-group col-md-3">
+                <label class="small font-weight-bold">关键词</label>
+                <input type="text" class="form-control" id="keyword" placeholder="商品名称、条形码">
+            </div>
+            <div class="form-group col-md-2">
+                <label class="small font-weight-bold">分类</label>
+                <select class="form-control" id="categoryFilter">
+                    <option value="">全部分类</option>
+                </select>
+            </div>
+            <div class="form-group col-md-2">
+                <label class="small font-weight-bold">状态</label>
+                <select class="form-control" id="statusFilter">
+                    <option value="">全部状态</option>
+                    <option value="active">上架</option>
+                    <option value="inactive">下架</option>
+                </select>
+            </div>
+            <div class="form-group col-md-2">
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fas fa-search mr-1"></i>搜索
+                </button>
+            </div>
+            <div class="form-group col-md-1">
+                <button type="button" class="btn btn-outline-secondary btn-block" onclick="resetSearch()">
+                    <i class="fas fa-redo"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 商品列表 -->
+<div class="card shadow">
+    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+        <h6 class="m-0 font-weight-bold text-primary">商品列表</h6>
+        <span class="badge badge-secondary" id="productCount">0 个商品</span>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover" id="productsTable">
+                <thead class="thead-light">
+                    <tr>
+                        <th style="width: 80px;">ID</th>
+                        <th style="width: 100px;">图片</th>
+                        <th>商品名称</th>
+                        <th>条形码</th>
+                        <th>规格</th>
+                        <th>分类</th>
+                        <th>成本价</th>
+                        <th>零售价</th>
+                        <th>状态</th>
+                        <th style="width: 150px;">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="10" class="text-center text-muted py-5">加载中...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 添加/编辑商品模态框 -->
+<div class="modal fade" id="productModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="productModalTitle">添加商品</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="productForm">
+                <input type="hidden" id="productId">
+                <div class="modal-body">
+                    <div class="form-row">
+                        <div class="form-group col-md-8">
+                            <label class="font-weight-bold">商品名称 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="productName" required>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label class="font-weight-bold">条形码</label>
+                            <input type="text" class="form-control" id="productBarcode" placeholder="自动生成或手动输入">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-4">
+                            <label class="font-weight-bold">分类 <span class="text-danger">*</span></label>
+                            <select class="form-control" id="productCategory" required>
+                                <option value="">请选择分类</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label class="font-weight-bold">规格</label>
+                            <input type="text" class="form-control" id="productSpecification" placeholder="如：330ml/罐">
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label class="font-weight-bold">状态</label>
+                            <select class="form-control" id="productStatus">
+                                <option value="active">上架</option>
+                                <option value="inactive">下架</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-3">
+                            <label class="font-weight-bold">成本价 <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">¥</span>
+                                </div>
+                                <input type="number" class="form-control" id="productCostPrice" step="0.01" min="0" required>
+                            </div>
+                        </div>
+                        <div class="form-group col-md-3">
+                            <label class="font-weight-bold">零售价 <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">¥</span>
+                                </div>
+                                <input type="number" class="form-control" id="productRetailPrice" step="0.01" min="0" required>
+                            </div>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label class="font-weight-bold">图片URL</label>
+                            <input type="url" class="form-control" id="productImageUrl" placeholder="https://...">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="font-weight-bold">商品描述</label>
+                        <textarea class="form-control" id="productDescription" rows="3" placeholder="请输入商品描述..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save mr-1"></i>保存
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 确认删除模态框 -->
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle mr-2"></i>确认删除</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>确定要删除商品 <strong id="deleteProductName"></strong> 吗？</p>
+                <p class="text-danger small"><i class="fas fa-info-circle mr-1"></i>如果商品已绑定到货道，将无法删除。</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    <i class="fas fa-trash mr-1"></i>确认删除
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentDeleteId = null;
+let categories = [];
+
+$(document).ready(function() {
+    loadCategories();
+    loadProducts();
+    setupFormHandlers();
+});
+
+function loadCategories() {
+    $.get('/api/categories/', function(data) {
+        categories = data;
+        const categoryFilter = $('#categoryFilter');
+        const productCategory = $('#productCategory');
+        
+        categoryFilter.empty().append('<option value="">全部分类</option>');
+        productCategory.empty().append('<option value="">请选择分类</option>');
+        
+        data.forEach(cat => {
+            categoryFilter.append(`<option value="${cat.id}">${cat.name}</option>`);
+            productCategory.append(`<option value="${cat.id}">${cat.name}</option>`);
+        });
+    }).fail(function(xhr) {
+        showToast('错误', '加载分类失败: ' + (xhr.responseJSON?.detail || '未知错误'), 'error');
+    });
+}
+
+function loadProducts() {
+    const keyword = $('#keyword').val();
+    const categoryId = $('#categoryFilter').val();
+    const status = $('#statusFilter').val();
+    
+    let url = '/api/products/';
+    let params = [];
+    
+    if (keyword) params.push(`keyword=${encodeURIComponent(keyword)}`);
+    if (categoryId) params.push(`category_id=${categoryId}`);
+    if (status) params.push(`status=${status}`);
+    
+    if (params.length > 0) {
+        url += '?' + params.join('&');
+    }
+    
+    // 显示加载状态
+    $('#productsTable tbody').html(`
+        <tr>
+            <td colspan="10" class="text-center text-muted py-5">
+                <i class="fas fa-spinner fa-spin mr-2"></i>加载中...
+            </td>
+        </tr>
+    `);
+    
+    $.get(url, function(data) {
+        renderProductsTable(data);
+        $('#productCount').text(`${data.length} 个商品`);
+    }).fail(function(xhr) {
+        const msg = xhr.responseJSON?.detail || '加载商品列表失败';
+        $('#productsTable tbody').html(`
+            <tr>
+                <td colspan="10" class="text-center text-danger py-5">
+                    <i class="fas fa-exclamation-circle mr-2"></i>${msg}
+                    <br>
+                    <button class="btn btn-link btn-sm mt-2" onclick="loadProducts()">
+                        <i class="fas fa-redo mr-1"></i>重试
+                    </button>
+                </td>
+            </tr>
+        `);
+        showToast('错误', msg, 'error');
+    });
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function renderProductsTable(products) {
+    const tbody = $('#productsTable tbody');
+    
+    if (products.length === 0) {
+        tbody.html(`
+            <tr>
+                <td colspan="10" class="text-center text-muted py-5">
+                    <i class="fas fa-inbox mr-2"></i>暂无商品数据
+                    <br>
+                    <button class="btn btn-link btn-sm mt-2" onclick="resetProductForm();$('#productModal').modal('show');">
+                        <i class="fas fa-plus mr-1"></i>添加第一个商品
+                    </button>
+                </td>
+            </tr>
+        `);
+        return;
+    }
+    
+    let html = '';
+    products.forEach(product => {
+        const statusBadge = product.status === 'active' 
+            ? '<span class="badge badge-success">上架</span>' 
+            : '<span class="badge badge-secondary">下架</span>';
+        
+        const categoryName = product.category ? escapeHtml(product.category.name) : '-';
+        
+        html += `
+            <tr>
+                <td>${product.id}</td>
+                <td>
+                    ${product.image_url 
+                        ? `<img src="${escapeHtml(product.image_url)}" alt="${escapeHtml(product.name)}" class="img-thumbnail" style="width: 50px; height: 50px; object-fit: cover;" onerror="this.style.display='none';this.nextElementSibling.style.display='';"><i class="fas fa-image text-muted fa-2x" style="display:none;"></i>`
+                        : '<i class="fas fa-image text-muted fa-2x"></i>'
+                    }
+                </td>
+                <td class="font-weight-bold">${escapeHtml(product.name)}</td>
+                <td><code>${product.barcode ? escapeHtml(product.barcode) : '-'}</code></td>
+                <td>${product.specification ? escapeHtml(product.specification) : '-'}</td>
+                <td><span class="badge badge-info">${categoryName}</span></td>
+                <td>¥${parseFloat(product.cost_price).toFixed(2)}</td>
+                <td class="text-primary font-weight-bold">¥${parseFloat(product.retail_price).toFixed(2)}</td>
+                <td>${statusBadge}</td>
+                <td>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-outline-primary" onclick="viewProduct(${product.id})" title="查看详情">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary" onclick="editProduct(${product.id})" title="编辑">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="confirmDelete(${product.id}, '${escapeHtml(product.name).replace(/'/g, "\\'")}')" title="删除">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    tbody.html(html);
+}
+
+function setupFormHandlers() {
+    // 搜索表单
+    $('#searchForm').on('submit', function(e) {
+        e.preventDefault();
+        loadProducts();
+    });
+    
+    // 实时搜索
+    $('#keyword').on('input', debounce(function() {
+        loadProducts();
+    }, 500));
+    
+    // 分类筛选变化
+    $('#categoryFilter, #statusFilter').on('change', function() {
+        loadProducts();
+    });
+    
+    // 商品表单
+    $('#productForm').on('submit', function(e) {
+        e.preventDefault();
+        if (validateProductForm()) {
+            saveProduct();
+        }
+    });
+    
+    // 确认删除按钮
+    $('#confirmDeleteBtn').on('click', function() {
+        deleteProduct();
+    });
+    
+    // 条形码自动生成
+    $('#productBarcode').on('focus', function() {
+        if (!$(this).val()) {
+            const barcode = '69' + Date.now().toString().slice(-11);
+            $(this).val(barcode);
+        }
+    });
+    
+    // 零售价自动计算（基于成本价）
+    $('#productCostPrice').on('change', function() {
+        const cost = parseFloat($(this).val()) || 0;
+        const currentRetail = parseFloat($('#productRetailPrice').val()) || 0;
+        if (currentRetail === 0 && cost > 0) {
+            // 默认30%毛利率
+            const suggestedRetail = cost * 1.3;
+            $('#productRetailPrice').val(suggestedRetail.toFixed(2));
+        }
+    });
+}
+
+function validateProductForm() {
+    const name = $('#productName').val().trim();
+    const categoryId = $('#productCategory').val();
+    const costPrice = parseFloat($('#productCostPrice').val()) || 0;
+    const retailPrice = parseFloat($('#productRetailPrice').val()) || 0;
+    
+    if (!name) {
+        showToast('警告', '请输入商品名称', 'warning');
+        $('#productName').focus();
+        return false;
+    }
+    
+    if (!categoryId) {
+        showToast('警告', '请选择商品分类', 'warning');
+        $('#productCategory').focus();
+        return false;
+    }
+    
+    if (costPrice <= 0) {
+        showToast('警告', '请输入有效的成本价', 'warning');
+        $('#productCostPrice').focus();
+        return false;
+    }
+    
+    if (retailPrice <= 0) {
+        showToast('警告', '请输入有效的零售价', 'warning');
+        $('#productRetailPrice').focus();
+        return false;
+    }
+    
+    if (retailPrice < costPrice) {
+        if (!confirm('零售价低于成本价，是否继续？')) {
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+function resetProductForm() {
+    $('#productModalTitle').text('添加商品');
+    $('#productId').val('');
+    $('#productName').val('');
+    $('#productBarcode').val('');
+    $('#productCategory').val('');
+    $('#productSpecification').val('');
+    $('#productStatus').val('active');
+    $('#productCostPrice').val('');
+    $('#productRetailPrice').val('');
+    $('#productImageUrl').val('');
+    $('#productDescription').val('');
+    
+    // 清除表单验证状态
+    $('.form-control').removeClass('is-invalid');
+}
+
+function viewProduct(id) {
+    $.get(`/api/products/${id}`, function(product) {
+        const categoryName = product.category ? product.category.name : '-';
+        
+        showToast('信息', `商品: ${product.name}, 分类: ${categoryName}, 零售价: ¥${product.retail_price}`, 'info');
+    }).fail(function(xhr) {
+        const msg = xhr.responseJSON?.detail || '获取商品详情失败';
+        showToast('错误', msg, 'error');
+    });
+}
+
+function editProduct(id) {
+    showToast('信息', '正在加载商品数据...', 'info');
+    
+    $.get(`/api/products/${id}`, function(product) {
+        $('#productModalTitle').text('编辑商品');
+        $('#productId').val(product.id);
+        $('#productName').val(product.name);
+        $('#productBarcode').val(product.barcode || '');
+        $('#productCategory').val(product.category_id);
+        $('#productSpecification').val(product.specification || '');
+        $('#productStatus').val(product.status);
+        $('#productCostPrice').val(product.cost_price);
+        $('#productRetailPrice').val(product.retail_price);
+        $('#productImageUrl').val(product.image_url || '');
+        $('#productDescription').val(product.description || '');
+        
+        $('#productModal').modal('show');
+        showToast('成功', '商品数据加载完成', 'success');
+    }).fail(function(xhr) {
+        const msg = xhr.responseJSON?.detail || '获取商品详情失败';
+        showToast('错误', msg, 'error');
+    });
+}
+
+function saveProduct() {
+    const id = $('#productId').val();
+    const data = {
+        name: $('#productName').val().trim(),
+        barcode: $('#productBarcode').val().trim() || null,
+        category_id: parseInt($('#productCategory').val()),
+        specification: $('#productSpecification').val().trim() || null,
+        status: $('#productStatus').val(),
+        cost_price: parseFloat($('#productCostPrice').val()),
+        retail_price: parseFloat($('#productRetailPrice').val()),
+        image_url: $('#productImageUrl').val().trim() || null,
+        description: $('#productDescription').val().trim() || null
+    };
+    
+    // 显示加载状态
+    const submitBtn = $('#productForm button[type="submit"]');
+    const originalText = submitBtn.html();
+    submitBtn.html('<i class="fas fa-spinner fa-spin mr-1"></i>保存中...').prop('disabled', true);
+    
+    const method = id ? 'PUT' : 'POST';
+    const url = id ? `/api/products/${id}` : '/api/products/';
+    
+    $.ajax({
+        url: url,
+        method: method,
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function() {
+            $('#productModal').modal('hide');
+            showToast('成功', id ? '商品更新成功' : '商品添加成功', 'success');
+            loadProducts();
+            // 刷新分类列表（确保新分类能显示）
+            loadCategories();
+        },
+        error: function(xhr) {
+            const msg = xhr.responseJSON?.detail || '操作失败';
+            showToast('错误', msg, 'error');
+        },
+        complete: function() {
+            submitBtn.html(originalText).prop('disabled', false);
+        }
+    });
+}
+
+function confirmDelete(id, name) {
+    currentDeleteId = id;
+    $('#deleteProductName').text(name);
+    $('#deleteModal').modal('show');
+}
+
+function deleteProduct() {
+    if (!currentDeleteId) return;
+    
+    const confirmBtn = $('#confirmDeleteBtn');
+    const originalText = confirmBtn.html();
+    confirmBtn.html('<i class="fas fa-spinner fa-spin mr-1"></i>删除中...').prop('disabled', true);
+    
+    $.ajax({
+        url: `/api/products/${currentDeleteId}`,
+        method: 'DELETE',
+        success: function(response) {
+            $('#deleteModal').modal('hide');
+            showToast('成功', response.message, 'success');
+            loadProducts();
+        },
+        error: function(xhr) {
+            const msg = xhr.responseJSON?.detail || '删除失败';
+            showToast('错误', msg, 'error');
+        },
+        complete: function() {
+            confirmBtn.html(originalText).prop('disabled', false);
+        }
+    });
+}
+
+function resetSearch() {
+    $('#keyword').val('');
+    $('#categoryFilter').val('');
+    $('#statusFilter').val('');
+    loadProducts();
+}
+</script>
+{% endblock %}

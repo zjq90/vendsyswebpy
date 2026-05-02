@@ -1,0 +1,672 @@
+{% extends "base.html" %}
+
+{% block title %}价格策略 - 自动售货机管理系统{% endblock %}
+
+{% block content %}
+<!-- 页面标题 -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-tags text-primary mr-2"></i>价格策略管理</h2>
+    <button class="btn btn-primary" data-toggle="modal" data-target="#strategyModal" onclick="resetStrategyForm()">
+        <i class="fas fa-plus mr-1"></i>添加策略
+    </button>
+</div>
+
+<!-- 策略类型说明 -->
+<div class="alert alert-info" role="alert">
+    <h6 class="alert-heading"><i class="fas fa-info-circle mr-2"></i>价格策略说明</h6>
+    <div class="row">
+        <div class="col-md-4">
+            <strong>分时段定价：</strong>根据不同时间段设置不同价格，如夜间折扣。
+        </div>
+        <div class="col-md-4">
+            <strong>区域差异化定价：</strong>根据售货机所在区域设置不同价格，如地铁站溢价。
+        </div>
+        <div class="col-md-4">
+            <strong>促销活动：</strong>在特定日期范围内设置促销价格。
+        </div>
+    </div>
+</div>
+
+<!-- 价格计算器 -->
+<div class="card shadow mb-4">
+    <div class="card-header bg-light py-3">
+        <h6 class="m-0 font-weight-bold text-primary">
+            <i class="fas fa-calculator mr-2"></i>价格计算器（测试策略效果）
+        </h6>
+    </div>
+    <div class="card-body">
+        <form id="priceCalcForm" class="form-row align-items-end">
+            <div class="form-group col-md-3">
+                <label class="small font-weight-bold">选择商品</label>
+                <select class="form-control" id="calcProduct" required>
+                    <option value="">请选择商品</option>
+                </select>
+            </div>
+            <div class="form-group col-md-3">
+                <label class="small font-weight-bold">选择设备</label>
+                <select class="form-control" id="calcMachine" required>
+                    <option value="">请选择设备</option>
+                </select>
+            </div>
+            <div class="form-group col-md-2">
+                <label class="small font-weight-bold">模拟时间</label>
+                <input type="time" class="form-control" id="calcTime">
+            </div>
+            <div class="form-group col-md-2">
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fas fa-calculator mr-1"></i>计算
+                </button>
+            </div>
+        </form>
+        <div id="priceResult" class="mt-3" style="display: none;">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <small class="text-muted">商品原价</small>
+                            <h4 class="text-secondary" id="calcBasePrice">¥0.00</h4>
+                        </div>
+                        <div class="col-md-1 text-center">
+                            <i class="fas fa-arrow-right text-muted mt-4"></i>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted">优惠金额</small>
+                            <h4 class="text-success" id="calcDiscount">¥0.00</h4>
+                        </div>
+                        <div class="col-md-1 text-center">
+                            <i class="fas fa-arrow-right text-muted mt-4"></i>
+                        </div>
+                        <div class="col-md-4">
+                            <small class="text-muted">最终价格</small>
+                            <h3 class="text-primary font-weight-bold" id="calcFinalPrice">¥0.00</h3>
+                        </div>
+                    </div>
+                    <div class="mt-2" id="calcStrategyInfo">
+                        <small class="text-muted">应用策略：</small>
+                        <span class="badge badge-primary ml-2" id="calcStrategyName">-</span>
+                        <span class="badge badge-secondary ml-1" id="calcStrategyType">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 筛选栏 -->
+<div class="card shadow mb-4">
+    <div class="card-body">
+        <form id="filterForm" class="form-row align-items-end">
+            <div class="form-group col-md-3">
+                <label class="small font-weight-bold">策略类型</label>
+                <select class="form-control" id="typeFilter">
+                    <option value="">全部类型</option>
+                    <option value="time_based">分时段定价</option>
+                    <option value="region_based">区域差异化定价</option>
+                    <option value="promotion">促销活动</option>
+                </select>
+            </div>
+            <div class="form-group col-md-2">
+                <label class="small font-weight-bold">状态</label>
+                <select class="form-control" id="statusFilter">
+                    <option value="">全部状态</option>
+                    <option value="active">启用</option>
+                    <option value="inactive">禁用</option>
+                </select>
+            </div>
+            <div class="form-group col-md-2">
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fas fa-search mr-1"></i>筛选
+                </button>
+            </div>
+            <div class="form-group col-md-1">
+                <button type="button" class="btn btn-outline-secondary btn-block" onclick="resetFilter()">
+                    <i class="fas fa-redo"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 策略列表 -->
+<div class="card shadow">
+    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+        <h6 class="m-0 font-weight-bold text-primary">价格策略列表</h6>
+        <span class="badge badge-secondary" id="strategyCount">0 条策略</span>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover" id="strategiesTable">
+                <thead class="thead-light">
+                    <tr>
+                        <th>策略名称</th>
+                        <th>类型</th>
+                        <th>适用商品</th>
+                        <th>适用条件</th>
+                        <th>折扣方式</th>
+                        <th>优先级</th>
+                        <th>状态</th>
+                        <th style="width: 150px;">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-5">加载中...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 添加/编辑策略模态框 -->
+<div class="modal fade" id="strategyModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="strategyModalTitle">添加价格策略</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="strategyForm">
+                <input type="hidden" id="strategyId">
+                <div class="modal-body">
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label class="font-weight-bold">策略名称 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="strategyName" required placeholder="如：夜间折扣8折">
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label class="font-weight-bold">策略类型 <span class="text-danger">*</span></label>
+                            <select class="form-control" id="strategyType" required>
+                                <option value="">请选择类型</option>
+                                <option value="time_based">分时段定价</option>
+                                <option value="region_based">区域差异化定价</option>
+                                <option value="promotion">促销活动</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label class="font-weight-bold">适用商品</label>
+                            <select class="form-control" id="strategyProduct">
+                                <option value="">所有商品</option>
+                            </select>
+                            <small class="form-text text-muted">留空表示适用于所有商品</small>
+                        </div>
+                        <div class="form-group col-md-3">
+                            <label class="font-weight-bold">优先级</label>
+                            <input type="number" class="form-control" id="strategyPriority" min="1" max="10" value="1">
+                            <small class="form-text text-muted">数值越大优先级越高</small>
+                        </div>
+                        <div class="form-group col-md-3">
+                            <label class="font-weight-bold">状态</label>
+                            <select class="form-control" id="strategyStatus">
+                                <option value="active">启用</option>
+                                <option value="inactive">禁用</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- 分时段定价专用 -->
+                    <div id="timeFields" style="display: none;">
+                        <div class="card bg-light mb-3">
+                            <div class="card-body">
+                                <h6 class="font-weight-bold text-primary">时段设置</h6>
+                                <div class="form-row">
+                                    <div class="form-group col-md-4">
+                                        <label>开始时间</label>
+                                        <input type="time" class="form-control" id="strategyStartTime">
+                                    </div>
+                                    <div class="form-group col-md-4">
+                                        <label>结束时间</label>
+                                        <input type="time" class="form-control" id="strategyEndTime">
+                                    </div>
+                                    <div class="form-group col-md-4">
+                                        <label>适用星期</label>
+                                        <input type="text" class="form-control" id="strategyDays" placeholder="如：1,2,3,4,5">
+                                        <small class="form-text text-muted">1=周一，7=周日，逗号分隔</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 区域定价专用 -->
+                    <div id="regionFields" style="display: none;">
+                        <div class="card bg-light mb-3">
+                            <div class="card-body">
+                                <h6 class="font-weight-bold text-primary">区域设置</h6>
+                                <div class="form-row">
+                                    <div class="form-group col-md-6">
+                                        <label>适用区域</label>
+                                        <input type="text" class="form-control" id="strategyRegion" placeholder="如：downtown, subway, hospital">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 促销活动专用 -->
+                    <div id="promotionFields" style="display: none;">
+                        <div class="card bg-light mb-3">
+                            <div class="card-body">
+                                <h6 class="font-weight-bold text-primary">促销日期设置</h6>
+                                <div class="form-row">
+                                    <div class="form-group col-md-6">
+                                        <label>开始日期时间</label>
+                                        <input type="datetime-local" class="form-control" id="strategyStartDate">
+                                    </div>
+                                    <div class="form-group col-md-6">
+                                        <label>结束日期时间</label>
+                                        <input type="datetime-local" class="form-control" id="strategyEndDate">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 折扣设置 -->
+                    <div class="card bg-light mb-3">
+                        <div class="card-body">
+                            <h6 class="font-weight-bold text-primary">折扣设置</h6>
+                            <div class="form-row">
+                                <div class="form-group col-md-6">
+                                    <label class="font-weight-bold">折扣类型 <span class="text-danger">*</span></label>
+                                    <select class="form-control" id="strategyDiscountType" required>
+                                        <option value="percentage">百分比折扣（如80表示8折）</option>
+                                        <option value="fixed">固定金额折扣</option>
+                                        <option value="fixed_price">固定价格</option>
+                                    </select>
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label class="font-weight-bold">折扣值 <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text" id="discountPrefix">%</span>
+                                        </div>
+                                        <input type="number" class="form-control" id="strategyDiscountValue" step="0.01" min="0" required>
+                                    </div>
+                                    <small class="form-text text-muted" id="discountHint">80表示8折优惠</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="font-weight-bold">策略描述</label>
+                        <textarea class="form-control" id="strategyDescription" rows="3" placeholder="策略说明..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save mr-1"></i>保存
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 确认删除模态框 -->
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle mr-2"></i>确认删除</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>确定要删除价格策略 <strong id="deleteStrategyName"></strong> 吗？</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    <i class="fas fa-trash mr-1"></i>确认删除
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let strategies = [];
+let products = [];
+let machines = [];
+let currentDeleteId = null;
+
+$(document).ready(function() {
+    loadProducts();
+    loadMachines();
+    loadStrategies();
+    setupFormHandlers();
+});
+
+function loadProducts() {
+    $.get('/api/products/', function(data) {
+        products = data;
+        const select = $('#strategyProduct');
+        const calcSelect = $('#calcProduct');
+        select.empty().append('<option value="">所有商品</option>');
+        calcSelect.empty().append('<option value="">请选择商品</option>');
+        data.forEach(p => {
+            select.append(`<option value="${p.id}">${p.name}</option>`);
+            calcSelect.append(`<option value="${p.id}">${p.name} (¥${p.retail_price})</option>`);
+        });
+    });
+}
+
+function loadMachines() {
+    $.get('/api/vending-machines/', function(data) {
+        machines = data;
+        const select = $('#calcMachine');
+        select.empty().append('<option value="">请选择设备</option>');
+        data.forEach(m => {
+            select.append(`<option value="${m.id}">${m.name} (${m.region || '无区域'})</option>`);
+        });
+    });
+}
+
+function loadStrategies() {
+    const type = $('#typeFilter').val();
+    const status = $('#statusFilter').val();
+    
+    let url = '/api/price-strategies/';
+    let params = [];
+    
+    if (type) params.push(`strategy_type=${type}`);
+    if (status) params.push(`status=${status}`);
+    
+    if (params.length > 0) {
+        url += '?' + params.join('&');
+    }
+    
+    $.get(url, function(data) {
+        strategies = data;
+        renderStrategiesTable(data);
+    });
+}
+
+function renderStrategiesTable(data) {
+    const tbody = $('#strategiesTable tbody');
+    
+    if (data.length === 0) {
+        tbody.html('<tr><td colspan="8" class="text-center text-muted py-5">暂无价格策略</td></tr>');
+        $('#strategyCount').text('0 条策略');
+        return;
+    }
+    
+    let html = '';
+    data.forEach(s => {
+        const typeText = {
+            'time_based': '分时段定价',
+            'region_based': '区域定价',
+            'promotion': '促销活动'
+        }[s.strategy_type] || s.strategy_type;
+        
+        const typeClass = {
+            'time_based': 'badge-info',
+            'region_based': 'badge-warning',
+            'promotion': 'badge-danger'
+        }[s.strategy_type] || 'badge-secondary';
+        
+        const discountText = {
+            'percentage': `${s.discount_value}%折扣`,
+            'fixed': `减${s.discount_value}元`,
+            'fixed_price': `固定${s.discount_value}元`
+        }[s.discount_type] || s.discount_value;
+        
+        let conditionText = '-';
+        if (s.strategy_type === 'time_based') {
+            conditionText = `${s.start_time || '-'} ~ ${s.end_time || '-'}`;
+        } else if (s.strategy_type === 'region_based') {
+            conditionText = s.applicable_region || '-';
+        } else if (s.strategy_type === 'promotion') {
+            conditionText = s.start_date ? `${s.start_date.split('T')[0]} ~ ${s.end_date ? s.end_date.split('T')[0] : '-'}` : '-';
+        }
+        
+        const productText = s.product_id ? '指定商品' : '所有商品';
+        const statusBadge = s.status === 'active' 
+            ? '<span class="badge badge-success">启用</span>' 
+            : '<span class="badge badge-secondary">禁用</span>';
+        
+        html += `
+            <tr>
+                <td class="font-weight-bold">${s.name}</td>
+                <td><span class="badge ${typeClass}">${typeText}</span></td>
+                <td>${productText}</td>
+                <td>${conditionText}</td>
+                <td>${discountText}</td>
+                <td><span class="badge badge-primary">${s.priority}</span></td>
+                <td>${statusBadge}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary mr-1" onclick="editStrategy(${s.id})" title="编辑">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="confirmDelete(${s.id}, '${s.name}')" title="删除">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    tbody.html(html);
+    $('#strategyCount').text(`${data.length} 条策略`);
+}
+
+function setupFormHandlers() {
+    $('#filterForm').on('submit', function(e) {
+        e.preventDefault();
+        loadStrategies();
+    });
+    
+    $('#strategyForm').on('submit', function(e) {
+        e.preventDefault();
+        saveStrategy();
+    });
+    
+    $('#priceCalcForm').on('submit', function(e) {
+        e.preventDefault();
+        calculatePrice();
+    });
+    
+    $('#confirmDeleteBtn').on('click', function() {
+        deleteStrategy();
+    });
+    
+    // 策略类型变化时显示/隐藏对应字段
+    $('#strategyType').on('change', function() {
+        const type = $(this).val();
+        $('#timeFields, #regionFields, #promotionFields').hide();
+        
+        if (type === 'time_based') {
+            $('#timeFields').show();
+        } else if (type === 'region_based') {
+            $('#regionFields').show();
+        } else if (type === 'promotion') {
+            $('#promotionFields').show();
+        }
+    });
+    
+    // 折扣类型变化
+    $('#strategyDiscountType').on('change', function() {
+        const type = $(this).val();
+        let prefix = '%';
+        let hint = '80表示8折优惠';
+        
+        if (type === 'fixed') {
+            prefix = '¥';
+            hint = '固定减少金额';
+        } else if (type === 'fixed_price') {
+            prefix = '¥';
+            hint = '固定售价';
+        }
+        
+        $('#discountPrefix').text(prefix);
+        $('#discountHint').text(hint);
+    });
+}
+
+function resetStrategyForm() {
+    $('#strategyModalTitle').text('添加价格策略');
+    $('#strategyId').val('');
+    $('#strategyName').val('');
+    $('#strategyType').val('').trigger('change');
+    $('#strategyProduct').val('');
+    $('#strategyPriority').val(1);
+    $('#strategyStatus').val('active');
+    $('#strategyStartTime').val('');
+    $('#strategyEndTime').val('');
+    $('#strategyDays').val('');
+    $('#strategyRegion').val('');
+    $('#strategyStartDate').val('');
+    $('#strategyEndDate').val('');
+    $('#strategyDiscountType').val('percentage').trigger('change');
+    $('#strategyDiscountValue').val('');
+    $('#strategyDescription').val('');
+}
+
+function editStrategy(id) {
+    const strategy = strategies.find(s => s.id === id);
+    if (!strategy) return;
+    
+    $('#strategyModalTitle').text('编辑价格策略');
+    $('#strategyId').val(strategy.id);
+    $('#strategyName').val(strategy.name);
+    $('#strategyType').val(strategy.strategy_type).trigger('change');
+    $('#strategyProduct').val(strategy.product_id || '');
+    $('#strategyPriority').val(strategy.priority);
+    $('#strategyStatus').val(strategy.status);
+    $('#strategyStartTime').val(strategy.start_time || '');
+    $('#strategyEndTime').val(strategy.end_time || '');
+    $('#strategyDays').val(strategy.applicable_days || '');
+    $('#strategyRegion').val(strategy.applicable_region || '');
+    
+    // 处理日期时间
+    if (strategy.start_date) {
+        $('#strategyStartDate').val(strategy.start_date.slice(0, 16));
+    }
+    if (strategy.end_date) {
+        $('#strategyEndDate').val(strategy.end_date.slice(0, 16));
+    }
+    
+    $('#strategyDiscountType').val(strategy.discount_type).trigger('change');
+    $('#strategyDiscountValue').val(strategy.discount_value);
+    $('#strategyDescription').val(strategy.description || '');
+    
+    $('#strategyModal').modal('show');
+}
+
+function saveStrategy() {
+    const id = $('#strategyId').val();
+    
+    const data = {
+        name: $('#strategyName').val(),
+        strategy_type: $('#strategyType').val(),
+        product_id: $('#strategyProduct').val() ? parseInt($('#strategyProduct').val()) : null,
+        priority: parseInt($('#strategyPriority').val()),
+        status: $('#strategyStatus').val(),
+        start_time: $('#strategyStartTime').val() || null,
+        end_time: $('#strategyEndTime').val() || null,
+        applicable_days: $('#strategyDays').val() || null,
+        applicable_region: $('#strategyRegion').val() || null,
+        start_date: $('#strategyStartDate').val() ? new Date($('#strategyStartDate').val()).toISOString() : null,
+        end_date: $('#strategyEndDate').val() ? new Date($('#strategyEndDate').val()).toISOString() : null,
+        discount_type: $('#strategyDiscountType').val(),
+        discount_value: parseFloat($('#strategyDiscountValue').val()),
+        description: $('#strategyDescription').val() || null
+    };
+    
+    const method = id ? 'PUT' : 'POST';
+    const url = id ? `/api/price-strategies/${id}` : '/api/price-strategies/';
+    
+    $.ajax({
+        url: url,
+        method: method,
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function() {
+            $('#strategyModal').modal('hide');
+            showToast('成功', id ? '价格策略更新成功' : '价格策略添加成功', 'success');
+            loadStrategies();
+        },
+        error: function(xhr) {
+            const msg = xhr.responseJSON ? xhr.responseJSON.detail : '操作失败';
+            showToast('错误', msg, 'error');
+        }
+    });
+}
+
+function confirmDelete(id, name) {
+    currentDeleteId = id;
+    $('#deleteStrategyName').text(name);
+    $('#deleteModal').modal('show');
+}
+
+function deleteStrategy() {
+    if (!currentDeleteId) return;
+    
+    $.ajax({
+        url: `/api/price-strategies/${currentDeleteId}`,
+        method: 'DELETE',
+        success: function(response) {
+            $('#deleteModal').modal('hide');
+            showToast('成功', response.message, 'success');
+            loadStrategies();
+        },
+        error: function(xhr) {
+            const msg = xhr.responseJSON ? xhr.responseJSON.detail : '删除失败';
+            showToast('错误', msg, 'error');
+        }
+    });
+}
+
+function calculatePrice() {
+    const productId = $('#calcProduct').val();
+    const machineId = $('#calcMachine').val();
+    const time = $('#calcTime').val();
+    
+    if (!productId || !machineId) {
+        showToast('警告', '请选择商品和设备', 'warning');
+        return;
+    }
+    
+    let url = `/api/price-strategies/calculate-price/?product_id=${productId}&machine_id=${machineId}`;
+    if (time) {
+        url += `&current_time_str=${time}`;
+    }
+    
+    $.get(url, function(data) {
+        $('#priceResult').show();
+        $('#calcBasePrice').text(`¥${data.base_price.toFixed(2)}`);
+        $('#calcDiscount').text(`¥${data.discount_amount.toFixed(2)}`);
+        $('#calcFinalPrice').text(`¥${data.final_price.toFixed(2)}`);
+        
+        if (data.applied_strategy) {
+            $('#calcStrategyInfo').show();
+            $('#calcStrategyName').text(data.applied_strategy);
+            const typeText = {
+                'time_based': '分时段',
+                'region_based': '区域',
+                'promotion': '促销'
+            }[data.strategy_type] || data.strategy_type;
+            $('#calcStrategyType').text(typeText);
+        } else {
+            $('#calcStrategyInfo').hide();
+        }
+    });
+}
+
+function resetFilter() {
+    $('#typeFilter').val('');
+    $('#statusFilter').val('');
+    loadStrategies();
+}
+</script>
+{% endblock %}

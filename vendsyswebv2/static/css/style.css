@@ -1,0 +1,314 @@
+/*
+ * 自动售货机管理系统 - 自定义样式
+ */
+
+/* 基础样式 */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #f8f9fc;
+}
+
+main {
+    flex: 1;
+}
+
+/* 导航栏样式 */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0,0,0,.08);
+}
+
+.navbar-brand {
+    font-weight: 600;
+    font-size: 1.2rem;
+}
+
+.nav-link {
+    font-weight: 500;
+}
+
+.nav-link.active {
+    font-weight: 600;
+}
+
+/* 卡片样式 */
+.card {
+    border: none;
+    box-shadow: 0 0 10px rgba(0,0,0,.05);
+    border-radius: 0.35rem;
+}
+
+.card-header {
+    background-color: #fff;
+    border-bottom: 1px solid #e3e6f0;
+    font-weight: 600;
+}
+
+/* 统计卡片样式 */
+.border-left-primary {
+    border-left: 0.25rem solid #4e73df !important;
+}
+
+.border-left-success {
+    border-left: 0.25rem solid #1cc88a !important;
+}
+
+.border-left-warning {
+    border-left: 0.25rem solid #f6c23e !important;
+}
+
+.border-left-danger {
+    border-left: 0.25rem solid #e74a3b !important;
+}
+
+.border-left-info {
+    border-left: 0.25rem solid #36b9cc !important;
+}
+
+/* 表格样式 */
+.table th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    color: #495057;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+/* 按钮样式 */
+.btn {
+    border-radius: 0.35rem;
+    font-weight: 500;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+/* 模态框样式 */
+.modal-content {
+    border: none;
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15);
+    border-radius: 0.5rem;
+}
+
+.modal-header {
+    border-bottom: 1px solid #e9ecef;
+    padding: 1rem 1.5rem;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    border-top: 1px solid #e9ecef;
+    padding: 1rem 1.5rem;
+}
+
+/* 表单样式 */
+.form-control {
+    border-radius: 0.35rem;
+    border: 1px solid #d1d3e2;
+}
+
+.form-control:focus {
+    border-color: #4e73df;
+    box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+}
+
+.form-group label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.form-group label.small {
+    font-size: 0.875rem;
+}
+
+/* Badge样式 */
+.badge {
+    font-weight: 500;
+    padding: 0.4em 0.6em;
+    font-size: 85%;
+}
+
+.badge-success {
+    background-color: #1cc88a;
+}
+
+.badge-warning {
+    background-color: #f6c23e;
+    color: #856404;
+}
+
+.badge-danger {
+    background-color: #e74a3b;
+}
+
+.badge-info {
+    background-color: #36b9cc;
+}
+
+.badge-secondary {
+    background-color: #858796;
+}
+
+.badge-primary {
+    background-color: #4e73df;
+}
+
+/* 进度条样式 */
+.progress {
+    height: 0.5rem;
+    border-radius: 0.25rem;
+    background-color: #eaecf4;
+}
+
+.progress-bar {
+    border-radius: 0.25rem;
+}
+
+/* Toast样式 */
+.toast-container {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 1055;
+}
+
+.toast {
+    min-width: 300px;
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15);
+}
+
+/* 页脚样式 */
+.footer {
+    background-color: #fff;
+    border-top: 1px solid #e3e6f0;
+}
+
+/* 搜索筛选栏 */
+.card-body form {
+    margin-bottom: 0;
+}
+
+/* 表格悬停效果 */
+.table-hover tbody tr:hover {
+    background-color: rgba(78, 115, 223, 0.03);
+}
+
+/* 空状态样式 */
+.text-muted.py-5 {
+    font-size: 0.95rem;
+}
+
+/* 价格计算器结果区域 */
+#priceResult .card {
+    background-color: #f8f9fc;
+    border: 1px solid #e3e6f0;
+}
+
+/* 模态框中的卡片 */
+.modal-body .card {
+    background-color: #f8f9fc;
+    border: 1px solid #e9ecef;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .navbar-brand {
+        font-size: 1rem;
+    }
+    
+    .btn-block-md {
+        display: block;
+        width: 100%;
+    }
+    
+    .table-responsive {
+        font-size: 0.85rem;
+    }
+}
+
+/* 动画效果 */
+.card, .btn, .form-control {
+    transition: all 0.2s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0,0,0,.1);
+}
+
+/* 加载动画 */
+.loading-spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgba(0,0,0,.1);
+    border-left-color: #4e73df;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* 警告提示框 */
+.alert {
+    border: none;
+    border-radius: 0.35rem;
+}
+
+.alert-info {
+    background-color: #e8f4fc;
+    color: #0c5460;
+}
+
+.alert-info h6 {
+    color: #0c5460;
+    font-weight: 600;
+}
+
+/* 下拉菜单 */
+.dropdown-menu {
+    border: none;
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15);
+    border-radius: 0.35rem;
+}
+
+.dropdown-item {
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fc;
+}
+
+/* 输入组 */
+.input-group-text {
+    background-color: #f8f9fc;
+    border: 1px solid #d1d3e2;
+}
+
+/* Small text 样式 */
+.form-text {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+/* Code 样式 */
+code {
+    color: #e83e8c;
+    background-color: #f8f9fa;
+    padding: 0.15rem 0.3rem;
+    border-radius: 0.2rem;
+    font-size: 90%;
+}

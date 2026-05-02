@@ -1,0 +1,454 @@
+{% extends "base.html" %}
+
+{% block title %}设备管理 - 自动售货机管理系统{% endblock %}
+
+{% block content %}
+<!-- 页面标题 -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-microchip text-primary mr-2"></i>售货机管理</h2>
+    <button class="btn btn-primary" data-toggle="modal" data-target="#machineModal" onclick="resetMachineForm()">
+        <i class="fas fa-plus mr-1"></i>添加设备
+    </button>
+</div>
+
+<!-- 设备状态统计 -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title">在线设备</h5>
+                        <h2 id="onlineCount">0</h2>
+                    </div>
+                    <i class="fas fa-wifi fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-secondary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title">离线设备</h5>
+                        <h2 id="offlineCount">0</h2>
+                    </div>
+                    <i class="fas fa-times-circle fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title">维护中</h5>
+                        <h2 id="maintenanceCount">0</h2>
+                    </div>
+                    <i class="fas fa-tools fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 搜索和筛选栏 -->
+<div class="card shadow mb-4">
+    <div class="card-body">
+        <form id="searchForm" class="form-row align-items-end">
+            <div class="form-group col-md-3">
+                <label class="small font-weight-bold">关键词</label>
+                <input type="text" class="form-control" id="keyword" placeholder="设备名称、序列号、位置">
+            </div>
+            <div class="form-group col-md-2">
+                <label class="small font-weight-bold">状态</label>
+                <select class="form-control" id="statusFilter">
+                    <option value="">全部状态</option>
+                    <option value="online">在线</option>
+                    <option value="offline">离线</option>
+                    <option value="maintenance">维护中</option>
+                </select>
+            </div>
+            <div class="form-group col-md-2">
+                <label class="small font-weight-bold">区域</label>
+                <select class="form-control" id="regionFilter">
+                    <option value="">全部区域</option>
+                </select>
+            </div>
+            <div class="form-group col-md-2">
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fas fa-search mr-1"></i>搜索
+                </button>
+            </div>
+            <div class="form-group col-md-1">
+                <button type="button" class="btn btn-outline-secondary btn-block" onclick="resetSearch()">
+                    <i class="fas fa-redo"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 设备列表 -->
+<div class="card shadow">
+    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+        <h6 class="m-0 font-weight-bold text-primary">设备列表</h6>
+        <span class="badge badge-secondary" id="machineCount">0 台设备</span>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover" id="machinesTable">
+                <thead class="thead-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>设备名称</th>
+                        <th>序列号</th>
+                        <th>位置</th>
+                        <th>区域</th>
+                        <th>货道配置</th>
+                        <th>状态</th>
+                        <th style="width: 200px;">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-5">加载中...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 添加/编辑设备模态框 -->
+<div class="modal fade" id="machineModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="machineModalTitle">添加设备</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="machineForm">
+                <input type="hidden" id="machineId">
+                <div class="modal-body">
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label class="font-weight-bold">设备名称 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="machineName" required placeholder="如：写字楼A座1号机">
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label class="font-weight-bold">设备序列号 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="machineSerial" required placeholder="如：VM001">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label class="font-weight-bold">安装位置</label>
+                            <input type="text" class="form-control" id="machineLocation" placeholder="如：写字楼A座1楼大厅">
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label class="font-weight-bold">区域标识</label>
+                            <input type="text" class="form-control" id="machineRegion" placeholder="如：downtown, subway, hospital">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-3">
+                            <label class="font-weight-bold">货道行数</label>
+                            <input type="number" class="form-control" id="machineRowCount" min="1" max="20" value="6">
+                        </div>
+                        <div class="form-group col-md-3">
+                            <label class="font-weight-bold">货道列数</label>
+                            <input type="number" class="form-control" id="machineColumnCount" min="1" max="20" value="8">
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label class="font-weight-bold">状态</label>
+                            <select class="form-control" id="machineStatus">
+                                <option value="offline">离线</option>
+                                <option value="online">在线</option>
+                                <option value="maintenance">维护中</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="font-weight-bold">设备描述</label>
+                        <textarea class="form-control" id="machineDescription" rows="3" placeholder="设备备注信息..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save mr-1"></i>保存
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 确认删除模态框 -->
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle mr-2"></i>确认删除</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>确定要删除售货机 <strong id="deleteMachineName"></strong> 吗？</p>
+                <p class="text-danger small"><i class="fas fa-info-circle mr-1"></i>如果设备下已配置货道，将无法删除。</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    <i class="fas fa-trash mr-1"></i>确认删除
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentDeleteId = null;
+
+$(document).ready(function() {
+    loadMachines();
+    setupFormHandlers();
+});
+
+function loadMachines() {
+    const keyword = $('#keyword').val();
+    const status = $('#statusFilter').val();
+    const region = $('#regionFilter').val();
+    
+    let url = '/api/vending-machines/';
+    let params = [];
+    
+    if (keyword) params.push(`keyword=${encodeURIComponent(keyword)}`);
+    if (status) params.push(`status=${status}`);
+    if (region) params.push(`region=${region}`);
+    
+    if (params.length > 0) {
+        url += '?' + params.join('&');
+    }
+    
+    $.get(url, function(data) {
+        renderMachinesTable(data);
+        updateStats(data);
+        updateRegionFilter(data);
+    });
+}
+
+function renderMachinesTable(machines) {
+    const tbody = $('#machinesTable tbody');
+    
+    if (machines.length === 0) {
+        tbody.html('<tr><td colspan="8" class="text-center text-muted py-5">暂无设备数据</td></tr>');
+        $('#machineCount').text('0 台设备');
+        return;
+    }
+    
+    let html = '';
+    machines.forEach(machine => {
+        const statusClass = {
+            'online': 'badge-success',
+            'offline': 'badge-secondary',
+            'maintenance': 'badge-warning'
+        }[machine.status] || 'badge-secondary';
+        
+        const statusText = {
+            'online': '在线',
+            'offline': '离线',
+            'maintenance': '维护中'
+        }[machine.status] || '未知';
+
+        const statusIcon = {
+            'online': 'fa-wifi',
+            'offline': 'fa-times-circle',
+            'maintenance': 'fa-tools'
+        }[machine.status] || 'fa-question-circle';
+
+        html += `
+            <tr>
+                <td>${machine.id}</td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <i class="fas ${statusIcon} mr-2 ${machine.status === 'online' ? 'text-success' : 'text-secondary'}"></i>
+                        <span class="font-weight-bold">${machine.name}</span>
+                    </div>
+                </td>
+                <td><code>${machine.serial_number}</code></td>
+                <td>${machine.location || '-'}</td>
+                <td><span class="badge badge-info">${machine.region || '-'}</span></td>
+                <td>${machine.row_count}行 × ${machine.column_count}列 = ${machine.row_count * machine.column_count}个货道</td>
+                <td><span class="badge ${statusClass}">${statusText}</span></td>
+                <td>
+                    <button class="btn btn-sm btn-outline-info mr-1" onclick="viewAisles(${machine.id})" title="货道配置">
+                        <i class="fas fa-th"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary mr-1" onclick="editMachine(${machine.id})" title="编辑">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="confirmDelete(${machine.id}, '${machine.name}')" title="删除">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    tbody.html(html);
+    $('#machineCount').text(`${machines.length} 台设备`);
+}
+
+function updateStats(machines) {
+    let online = 0, offline = 0, maintenance = 0;
+    machines.forEach(m => {
+        if (m.status === 'online') online++;
+        else if (m.status === 'offline') offline++;
+        else if (m.status === 'maintenance') maintenance++;
+    });
+    $('#onlineCount').text(online);
+    $('#offlineCount').text(offline);
+    $('#maintenanceCount').text(maintenance);
+}
+
+function updateRegionFilter(machines) {
+    const regions = new Set();
+    machines.forEach(m => {
+        if (m.region) regions.add(m.region);
+    });
+    
+    const select = $('#regionFilter');
+    const currentValue = select.val();
+    select.empty().append('<option value="">全部区域</option>');
+    
+    regions.forEach(r => {
+        select.append(`<option value="${r}">${r}</option>`);
+    });
+    
+    select.val(currentValue);
+}
+
+function setupFormHandlers() {
+    $('#searchForm').on('submit', function(e) {
+        e.preventDefault();
+        loadMachines();
+    });
+    
+    $('#machineForm').on('submit', function(e) {
+        e.preventDefault();
+        saveMachine();
+    });
+    
+    $('#confirmDeleteBtn').on('click', function() {
+        deleteMachine();
+    });
+}
+
+function resetMachineForm() {
+    $('#machineModalTitle').text('添加设备');
+    $('#machineId').val('');
+    $('#machineName').val('');
+    $('#machineSerial').val('');
+    $('#machineLocation').val('');
+    $('#machineRegion').val('');
+    $('#machineRowCount').val(6);
+    $('#machineColumnCount').val(8);
+    $('#machineStatus').val('offline');
+    $('#machineDescription').val('');
+}
+
+function editMachine(id) {
+    $.get(`/api/vending-machines/${id}`, function(machine) {
+        $('#machineModalTitle').text('编辑设备');
+        $('#machineId').val(machine.id);
+        $('#machineName').val(machine.name);
+        $('#machineSerial').val(machine.serial_number);
+        $('#machineLocation').val(machine.location || '');
+        $('#machineRegion').val(machine.region || '');
+        $('#machineRowCount').val(machine.row_count);
+        $('#machineColumnCount').val(machine.column_count);
+        $('#machineStatus').val(machine.status);
+        $('#machineDescription').val(machine.description || '');
+        
+        $('#machineModal').modal('show');
+    });
+}
+
+function saveMachine() {
+    const id = $('#machineId').val();
+    const data = {
+        name: $('#machineName').val(),
+        serial_number: $('#machineSerial').val(),
+        location: $('#machineLocation').val() || null,
+        region: $('#machineRegion').val() || null,
+        row_count: parseInt($('#machineRowCount').val()),
+        column_count: parseInt($('#machineColumnCount').val()),
+        status: $('#machineStatus').val(),
+        description: $('#machineDescription').val() || null
+    };
+    
+    const method = id ? 'PUT' : 'POST';
+    const url = id ? `/api/vending-machines/${id}` : '/api/vending-machines/';
+    
+    $.ajax({
+        url: url,
+        method: method,
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function() {
+            $('#machineModal').modal('hide');
+            showToast('成功', id ? '设备更新成功' : '设备添加成功', 'success');
+            loadMachines();
+        },
+        error: function(xhr) {
+            const msg = xhr.responseJSON ? xhr.responseJSON.detail : '操作失败';
+            showToast('错误', msg, 'error');
+        }
+    });
+}
+
+function viewAisles(machineId) {
+    showToast('信息', '货道配置功能请在库存管理页面查看', 'info');
+    // 这里可以跳转到货道管理页面或打开模态框
+}
+
+function confirmDelete(id, name) {
+    currentDeleteId = id;
+    $('#deleteMachineName').text(name);
+    $('#deleteModal').modal('show');
+}
+
+function deleteMachine() {
+    if (!currentDeleteId) return;
+    
+    $.ajax({
+        url: `/api/vending-machines/${currentDeleteId}`,
+        method: 'DELETE',
+        success: function(response) {
+            $('#deleteModal').modal('hide');
+            showToast('成功', response.message, 'success');
+            loadMachines();
+        },
+        error: function(xhr) {
+            const msg = xhr.responseJSON ? xhr.responseJSON.detail : '删除失败';
+            showToast('错误', msg, 'error');
+        }
+    });
+}
+
+function resetSearch() {
+    $('#keyword').val('');
+    $('#statusFilter').val('');
+    $('#regionFilter').val('');
+    loadMachines();
+}
+</script>
+{% endblock %}

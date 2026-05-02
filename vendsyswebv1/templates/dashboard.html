@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>仪表盘 - 自动售货机管理系统</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+    <style>
+        body { background-color: #f8f9fa; }
+        .stat-card {
+            border-radius: 10px;
+            border: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            transition: transform 0.3s;
+        }
+        .stat-card:hover { transform: translateY(-5px); }
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+        .icon-blue { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .icon-green { background: linear-gradient(135deg, #11998e, #38ef7d); }
+        .icon-red { background: linear-gradient(135deg, #eb3349, #f45c43); }
+        .icon-orange { background: linear-gradient(135deg, #f093fb, #f5576c); }
+        .stat-value { font-size: 28px; font-weight: 700; }
+        .stat-label { color: #6c757d; font-size: 14px; }
+        .page-header { padding: 20px 0; }
+        .card { border: none; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+        .card-header { background: white; border-bottom: 1px solid #eee; font-weight: 600; }
+        .table th { border-top: none; font-weight: 600; color: #495057; }
+        .badge { font-size: 85%; padding: 4px 8px; }
+        .btn-refresh { background: linear-gradient(135deg, #4facfe, #00f2fe); border: none; color: white; }
+        .btn-refresh:hover { color: white; opacity: 0.9; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary" id="navbar">
+        <a class="navbar-brand" href="/dashboard">
+            <i class="fa fa-cogs mr-2"></i>自动售货机管理系统
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item active">
+                    <a class="nav-link" href="/dashboard">
+                        <i class="fa fa-dashboard mr-1"></i>仪表盘
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/devices">
+                        <i class="fa fa-desktop mr-1"></i>设备管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/products">
+                        <i class="fa fa-shopping-bag mr-1"></i>商品管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/lanes">
+                        <i class="fa fa-th mr-1"></i>货道管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/monitor">
+                        <i class="fa fa-tachometer mr-1"></i>状态监控
+                    </a>
+                </li>
+                <li class="nav-item admin-only">
+                    <a class="nav-link" href="/control">
+                        <i class="fa fa-wrench mr-1"></i>远程控制
+                    </a>
+                </li>
+            </ul>
+            <ul class="navbar-nav">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown">
+                        <i class="fa fa-user-circle mr-1"></i>
+                        <span id="userName">用户</span>
+                        <small class="badge badge-light ml-1" id="userRole">业务员</small>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right">
+                        <a class="dropdown-item" href="#">
+                            <i class="fa fa-user mr-2"></i>个人信息
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="#" id="logoutBtn">
+                            <i class="fa fa-sign-out mr-2"></i>退出登录
+                        </a>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="page-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-0"><i class="fa fa-dashboard text-primary mr-2"></i>仪表盘</h3>
+                    <small class="text-muted">系统概览与统计</small>
+                </div>
+                <button class="btn btn-refresh" id="refreshBtn">
+                    <i class="fa fa-refresh mr-1"></i>刷新数据
+                </button>
+            </div>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="row mb-4">
+            <div class="col-6 col-md-3 mb-3">
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="stat-icon icon-blue mr-3">
+                                <i class="fa fa-desktop"></i>
+                            </div>
+                            <div>
+                                <div class="stat-value" id="totalDevices">--</div>
+                                <div class="stat-label">设备总数</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 mb-3">
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="stat-icon icon-green mr-3">
+                                <i class="fa fa-check-circle"></i>
+                            </div>
+                            <div>
+                                <div class="stat-value text-success" id="onlineDevices">--</div>
+                                <div class="stat-label">在线设备</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 mb-3">
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="stat-icon icon-red mr-3">
+                                <i class="fa fa-times-circle"></i>
+                            </div>
+                            <div>
+                                <div class="stat-value text-danger" id="offlineDevices">--</div>
+                                <div class="stat-label">离线设备</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 mb-3">
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="stat-icon icon-orange mr-3">
+                                <i class="fa fa-exclamation-triangle"></i>
+                            </div>
+                            <div>
+                                <div class="stat-value text-warning" id="faultDevices">--</div>
+                                <div class="stat-label">故障设备</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- 设备列表 -->
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fa fa-list mr-2"></i>设备列表</span>
+                        <a href="/devices" class="btn btn-sm btn-outline-primary">查看全部 <i class="fa fa-angle-right ml-1"></i></a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>设备编号</th>
+                                        <th>设备名称</th>
+                                        <th>位置</th>
+                                        <th>状态</th>
+                                        <th>在线</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="deviceTable">
+                                    <tr><td colspan="6" class="text-center py-4 text-muted"><i class="fa fa-spinner fa-spin mr-2"></i>加载中...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 快捷操作 -->
+            <div class="col-lg-4">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <i class="fa fa-bolt mr-2"></i>快捷操作
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <button class="btn btn-outline-primary btn-block" onclick="window.location.href='/devices'">
+                                    <i class="fa fa-plus-circle mb-2 d-block fa-2x"></i>
+                                    设备管理
+                                </button>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <button class="btn btn-outline-success btn-block" onclick="window.location.href='/products'">
+                                    <i class="fa fa-shopping-bag mb-2 d-block fa-2x"></i>
+                                    商品管理
+                                </button>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <button class="btn btn-outline-info btn-block" onclick="window.location.href='/lanes'">
+                                    <i class="fa fa-th mb-2 d-block fa-2x"></i>
+                                    货道管理
+                                </button>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <button class="btn btn-outline-warning btn-block" onclick="window.location.href='/monitor'">
+                                    <i class="fa fa-tachometer mb-2 d-block fa-2x"></i>
+                                    状态监控
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 测试数据生成 -->
+                <div class="card admin-only">
+                    <div class="card-header">
+                        <i class="fa fa-flask mr-2"></i>测试工具
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-3">生成模拟设备状态数据用于测试</p>
+                        <button class="btn btn-warning btn-block" id="mockAllBtn">
+                            <i class="fa fa-refresh mr-1"></i>生成所有设备模拟数据
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const authToken = localStorage.getItem('authToken');
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        
+        function getHeaders() {
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            };
+        }
+        
+        function formatDateTime(dateString) {
+            if (!dateString) return '-';
+            return new Date(dateString).toLocaleString('zh-CN');
+        }
+        
+        function getStatusBadge(status) {
+            const map = {
+                'normal': 'badge-success',
+                'maintenance': 'badge-warning',
+                'faulty': 'badge-danger',
+                'offline': 'badge-secondary'
+            };
+            return map[status] || 'badge-secondary';
+        }
+        
+        function getStatusText(status) {
+            const map = {
+                'normal': '正常',
+                'maintenance': '维护中',
+                'faulty': '故障',
+                'offline': '离线'
+            };
+            return map[status] || status;
+        }
+        
+        function showMessage(message, type = 'success') {
+            const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+            const $alert = $(`<div class="alert ${alertClass} alert-dismissible fade show fixed-top m-3" role="alert" style="z-index: 9999; right: 0; max-width: 400px;">
+                <strong>${type === 'success' ? '✓' : '✗'}</strong> ${message}
+                <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+            </div>`);
+            $('body').append($alert);
+            setTimeout(() => $alert.alert('close'), 3000);
+        }
+        
+        async function loadDashboard() {
+            try {
+                // 加载统计数据
+                const summary = await $.ajax({
+                    url: '/api/devices/count/summary',
+                    headers: getHeaders()
+                });
+                
+                $('#totalDevices').text(summary.total);
+                $('#onlineDevices').text(summary.online);
+                $('#offlineDevices').text(summary.offline);
+                $('#faultDevices').text(summary.faulty + summary.maintenance);
+                
+                // 加载设备列表
+                const devices = await $.ajax({
+                    url: '/api/devices/?limit=5',
+                    headers: getHeaders()
+                });
+                
+                renderDeviceTable(devices);
+                
+            } catch (error) {
+                console.error('加载数据失败:', error);
+                showMessage('加载数据失败', 'error');
+            }
+        }
+        
+        function renderDeviceTable(devices) {
+            const $tbody = $('#deviceTable');
+            if (devices.length === 0) {
+                $tbody.html('<tr><td colspan="6" class="text-center py-4 text-muted">暂无设备数据</td></tr>');
+                return;
+            }
+            
+            const html = devices.map(device => {
+                const isOnline = device.last_status?.is_online;
+                return `
+                    <tr>
+                        <td><code>${device.device_code}</code></td>
+                        <td>${device.device_name}</td>
+                        <td class="text-truncate" style="max-width: 200px;" title="${device.location_name || '-'}">${device.location_name || '-'}</td>
+                        <td><span class="badge ${getStatusBadge(device.status)}">${getStatusText(device.status)}</span></td>
+                        <td>
+                            ${isOnline ? 
+                                '<span class="badge badge-success"><i class="fa fa-circle mr-1" style="font-size: 6px;"></i>在线</span>' : 
+                                '<span class="badge badge-secondary"><i class="fa fa-circle mr-1" style="font-size: 6px;"></i>离线</span>'
+                            }
+                        </td>
+                        <td>
+                            <a href="/device/${device.id}" class="btn btn-sm btn-outline-primary">
+                                <i class="fa fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            $tbody.html(html);
+        }
+        
+        async function mockAllDevices() {
+            try {
+                const $btn = $('#mockAllBtn');
+                const originalText = $btn.html();
+                $btn.html('<i class="fa fa-spinner fa-spin mr-1"></i>生成中...').prop('disabled', true);
+                
+                const result = await $.ajax({
+                    url: '/api/status/mock/update-all',
+                    method: 'POST',
+                    headers: getHeaders()
+                });
+                
+                showMessage(`已为 ${result.updated_count} 台设备生成模拟数据`);
+                await loadDashboard();
+                
+                $btn.html(originalText).prop('disabled', false);
+            } catch (error) {
+                showMessage('生成模拟数据失败', 'error');
+                $('#mockAllBtn').html('<i class="fa fa-refresh mr-1"></i>生成所有设备模拟数据').prop('disabled', false);
+            }
+        }
+        
+        // 初始化
+        $(document).ready(() => {
+            // 检查登录状态
+            if (!authToken) {
+                window.location.href = '/login';
+                return;
+            }
+            
+            // 设置用户信息
+            $('#userName').text(currentUser.real_name);
+            $('#userRole').text(currentUser.role === 'admin' ? '管理员' : '业务员');
+            
+            // 根据角色隐藏菜单
+            if (currentUser.role !== 'admin') {
+                $('.admin-only').hide();
+            }
+            
+            // 登出按钮
+            $('#logoutBtn').click((e) => {
+                e.preventDefault();
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('currentUser');
+                window.location.href = '/login';
+            });
+            
+            // 刷新按钮
+            $('#refreshBtn').click(loadDashboard);
+            
+            // 模拟数据按钮
+            $('#mockAllBtn').click(mockAllDevices);
+            
+            // 加载数据
+            loadDashboard();
+        });
+    </script>
+</body>
+</html>
